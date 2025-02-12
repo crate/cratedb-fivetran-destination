@@ -9,5 +9,8 @@
 - Documentation: Upstream
 
 ## Iteration +2
+- Import Parquet?
+
+## Iteration +3
 - Consider using Golang or Java, like others are doing it
 
