@@ -43,6 +43,7 @@ pip install --upgrade cratedb-fivetran-destination
 
 ## Usage
 
+Start gRPC destination server.
 ```bash
 python -m cratedb_fivetran_destination.main
 ```
@@ -96,7 +97,7 @@ The project uses the Apache license, like CrateDB itself.
 [Source code]: https://github.com/crate-workbench/cratedb-fivetran-destination
 
 [badge-bluesky]: https://img.shields.io/badge/Bluesky-0285FF?logo=bluesky&logoColor=fff&label=Follow%20%40CrateDB
-[badge-ci]: https://github.com/crate-workbench/cratedb-fivetran-destination/actions/workflows/ci.yml/badge.svg
+[badge-ci]: https://github.com/crate-workbench/cratedb-fivetran-destination/actions/workflows/tests.yml/badge.svg
 [badge-downloads-per-month]: https://pepy.tech/badge/cratedb-fivetran-destination/month
 [badge-license]: https://img.shields.io/github/license/crate-workbench/cratedb-fivetran-destination.svg
 [badge-package-version]: https://img.shields.io/pypi/v/cratedb-fivetran-destination.svg
@@ -104,7 +105,7 @@ The project uses the Apache license, like CrateDB itself.
 [badge-release-notes]: https://img.shields.io/github/release/crate-workbench/cratedb-fivetran-destination?label=Release+Notes
 [badge-status]: https://img.shields.io/pypi/status/cratedb-fivetran-destination.svg
 [project-bluesky]: https://bsky.app/search?q=cratedb
-[project-ci]: https://github.com/crate-workbench/cratedb-fivetran-destination/actions/workflows/ci.yml
+[project-ci]: https://github.com/crate-workbench/cratedb-fivetran-destination/actions/workflows/tests.yml
 [project-downloads]: https://pepy.tech/project/cratedb-fivetran-destination/
 [project-license]: https://github.com/crate-workbench/cratedb-fivetran-destination/blob/cratedb/LICENSE
 [project-pypi]: https://pypi.org/project/cratedb-fivetran-destination
