@@ -4,4 +4,5 @@
 ## Unreleased
 
 ## v0.0.0 - 2025-02-xx
-- Make it work
+- Added project skeleton
+- Added generated SDK GRPC API stubs

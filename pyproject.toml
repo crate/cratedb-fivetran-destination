@@ -71,6 +71,15 @@ dynamic = [
 ]
 
 dependencies = [
+  "google~=3.0.0",
+  "grpcio==1.60.1",
+  "grpcio-tools==1.60.1",
+  "pip~=23.0.1",
+  "protobuf==4.25.3",
+  "pycryptodome==3.19.1",
+  "setuptools~=65.5.0",
+  "sqlalchemy-cratedb",
+  "zstandard~=0.22.0",
 ]
 
 optional-dependencies.develop = [
@@ -97,6 +106,7 @@ urls.Repository = "https://github.com/crate-workbench/cratedb-fivetran-destinati
 packages.find = {}
 
 [tool.ruff]
+line-length = 100
 lint.select = [
   # Builtins
   "A",

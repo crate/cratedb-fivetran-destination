@@ -5,6 +5,7 @@
 git clone https://github.com/crate-workbench/cratedb-fivetran-destination.git
 cd cratedb-fivetran-destination
 uv venv --seed
+source .venv/bin/activate
 uv pip install --upgrade --editable='.[develop,test]'
 ```
 
