@@ -1,0 +1,10 @@
+{
+  "writerType": "Database",
+  "database": "doc",
+  "table": "testdrive",
+  "host": "localhost",
+  "port": "4200",
+  "user": "crate",
+  "password": "",
+  "enableEncryption": "false"
+}

@@ -7,3 +7,4 @@
 - Added project skeleton
 - Added generated SDK GRPC API stubs
 - Added example destination blueprint
+- Added software integration tests

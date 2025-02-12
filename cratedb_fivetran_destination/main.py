@@ -253,13 +253,18 @@ def log_message(level, message):
     print(f'{{"level":"{level}", "message": "{message}", "message-origin": "sdk_destination"}}')
 
 
-if __name__ == "__main__":
+def start_server():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
     server.add_insecure_port("[::]:50052")
     destination_sdk_pb2_grpc.add_DestinationConnectorServicer_to_server(
         CrateDBDestinationImpl(), server
     )
     server.start()
+    return server
+
+
+if __name__ == "__main__":  # pragma: no cover
+    server = start_server()
     print("Destination gRPC server started...")
     server.wait_for_termination()
     print("Destination gRPC server terminated...")
