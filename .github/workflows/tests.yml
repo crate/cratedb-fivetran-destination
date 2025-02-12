@@ -21,12 +21,19 @@ jobs:
         os: ['ubuntu-22.04']
         python-version: [
           '3.9',
-          '3.13',
+          '3.12',
         ]
         cratedb-version: ['nightly']
 
     env:
       UV_SYSTEM_PYTHON: true
+
+    services:
+      cratedb:
+        image: crate/crate:nightly
+        ports:
+          - 4200:4200
+          - 5432:5432
 
     steps:
 

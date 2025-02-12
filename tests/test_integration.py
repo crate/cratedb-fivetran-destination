@@ -4,6 +4,7 @@ from textwrap import dedent
 from time import sleep
 
 import pytest
+import sqlalchemy as sa
 
 
 def run(command: str, background: bool = False):
@@ -11,6 +12,14 @@ def run(command: str, background: bool = False):
         return subprocess.Popen(command, shell=True)  # noqa: S602
     subprocess.check_call(command, stderr=subprocess.STDOUT, shell=True)  # noqa: S602
     return None
+
+
+@pytest.fixture(autouse=True)
+def reset_tables():
+    engine = sa.create_engine("crate://")
+    with engine.connect() as connection:
+        connection.execute(sa.text("DROP TABLE IF EXISTS tester.campaign"))
+        connection.execute(sa.text("DROP TABLE IF EXISTS tester.transaction"))
 
 
 @pytest.fixture

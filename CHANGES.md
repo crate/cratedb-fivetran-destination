@@ -8,3 +8,4 @@
 - Added generated SDK GRPC API stubs
 - Added example destination blueprint
 - Added software integration tests
+- DML: Added SQLAlchemy backend implementation for upsert, update, delete
