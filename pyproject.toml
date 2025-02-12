@@ -76,7 +76,7 @@ dependencies = [
   "grpcio-tools<1.71",
   "protobuf<5.30",
   "pycryptodome<3.22",
-  "sqlalchemy-cratedb",
+  "sqlalchemy-cratedb<0.42",
   "zstandard<0.24",
 ]
 
@@ -144,6 +144,7 @@ minversion = "2.0"
 addopts = """
   -rfEX -p pytester --strict-markers --verbosity=3
   --cov --cov-report=term-missing --cov-report=xml
+  --capture=no
   """
 log_level = "DEBUG"
 log_cli_level = "DEBUG"
@@ -154,8 +155,14 @@ markers = [
 
 [tool.coverage.run]
 omit = [
+  "cratedb_fivetran_destination/sdk_pb2/*",
   "tests/*",
 ]
+source = [ "cratedb_fivetran_destination" ]
+
+[tool.coverage.report]
+fail_under = 0
+show_missing = true
 
 [tool.mypy]
 packages = [ "cratedb_fivetran_destination" ]
