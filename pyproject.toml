@@ -77,6 +77,8 @@ dependencies = [
   "protobuf<5.30",
   "pycryptodome<3.22",
   "sqlalchemy-cratedb<0.42",
+  "tikray<0.1",
+  "toolz<2",
   "zstandard<0.24",
 ]
 
@@ -136,7 +138,6 @@ lint.select = [
   # flake8-2020
   "YTT",
 ]
-lint.per-file-ignores."cratedb_fivetran_destination/*.py" = [ "T201" ] # `print` found
 lint.per-file-ignores."tests/*" = [ "S101" ] # Use of `assert` detected
 
 [tool.pytest.ini_options]

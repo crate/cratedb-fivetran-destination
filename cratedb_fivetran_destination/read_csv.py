@@ -27,7 +27,5 @@ def decrypt_file(input_file_path, value):
         csv_data = decompressed_data.decode("utf-8")
         csv_reader = csv.reader(csv_data.splitlines())
         headers = next(csv_reader)
-        print(f"{'  |  '.join(headers)}")
-        print("-" * (len(headers) * 15))
         for row in csv_reader:
-            print(f"{'  |  '.join(row)}")
+            yield dict(zip(headers, row))

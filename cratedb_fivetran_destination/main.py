@@ -1,7 +1,19 @@
+# ruff: noqa: S608  # Possible SQL injection vector through string-based query construction
 # Source: https://github.com/fivetran/fivetran_sdk/tree/v2/examples/destination_connector/python
+import logging
+import sys
+import typing as t
 from concurrent import futures
 
 import grpc
+import sqlalchemy as sa
+
+from cratedb_fivetran_destination.sdk_pb2.common_pb2 import Column
+from cratedb_fivetran_destination.util import (
+    CrateDBKnowledge,
+    Processor,
+    TableInfo,
+)
 
 from . import read_csv
 from .sdk_pb2 import common_pb2, destination_sdk_pb2, destination_sdk_pb2_grpc
@@ -11,9 +23,17 @@ WARNING = "WARNING"
 SEVERE = "SEVERE"
 
 
+logger = logging.getLogger()
+
+
 class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServicer):
+    def __init__(self):
+        self.metadata = sa.MetaData()
+        self.engine = sa.create_engine("crate://")
+        self.processor = Processor(engine=self.engine)
+
     def ConfigurationForm(self, request, context):
-        log_message(INFO, "Fetching Configuration form")
+        log_message(INFO, "Fetching configuration form")
 
         # Create the form fields
         form_fields = common_pb2.ConfigurationFormResponse(
@@ -177,12 +197,22 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         return form_fields
 
     def Test(self, request, context):
+        """
+        FIXME: Verify database connectivity.
+
+        Status: 0%
+        """
         test_name = request.name
         log_message(INFO, "test name: " + test_name)
         return common_pb2.TestResponse(success=True)
 
     def CreateTable(self, request, context):
-        print(
+        """
+        Create database table using SQLAlchemy.
+
+        Status: 80%
+        """
+        logger.info(
             "[CreateTable] :"
             + str(request.schema_name)
             + " | "
@@ -190,12 +220,30 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             + " | "
             + str(request.table.columns)
         )
+        table = sa.Table(request.table.name, self.metadata, schema=request.schema_name)
+        fivetran_column: Column
+        for fivetran_column in request.table.columns:
+            db_column: sa.Column = sa.Column()
+            db_column.name = CrateDBKnowledge.resolve_field(fivetran_column.name)
+            db_column.type = CrateDBKnowledge.resolve_type(fivetran_column.type)
+            db_column.primary_key = fivetran_column.primary_key
+            if db_column.primary_key:
+                db_column.nullable = False
+            # TODO: Which kind of parameters are relayed by Fivetran here?
+            # db_column.params(fivetran_column.params)  # noqa: ERA001
+            table.append_column(db_column)
+
+        # Need to add the `__fivetran_deleted` column manually?
+        col: sa.Column = sa.Column(name="__fivetran_deleted")
+        col.type = sa.Boolean()
+        table.append_column(col)
+
+        table.create(self.engine)
         return destination_sdk_pb2.CreateTableResponse(success=True)
 
     def AlterTable(self, request, context):
         res: destination_sdk_pb2.AlterTableResponse  # noqa: F842
-
-        print(
+        logger.info(
             "[AlterTable]: "
             + str(request.schema_name)
             + " | "
@@ -206,31 +254,66 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         return destination_sdk_pb2.AlterTableResponse(success=True)
 
     def Truncate(self, request, context):
-        print(
+        """
+        Truncate database table using plain SQL.
+
+        Status: 100%
+        """
+        logger.info(
             "[TruncateTable]: "
             + str(request.schema_name)
             + " | "
-            + str(request.schema_name)
+            + str(request.table_name)
             + " | soft"
             + str(request.soft)
         )
+        with self.engine.connect() as connection:
+            connection.execute(
+                sa.text(f'DELETE FROM "{request.schema_name}"."{request.table_name}"')
+            )
         return destination_sdk_pb2.TruncateResponse(success=True)
 
-    def WriteBatch(self, request, context):
-        for replace_file in request.replace_files:
-            print("replace files: " + str(replace_file))
-        for update_file in request.update_files:
-            print("replace files: " + str(update_file))
-        for delete_file in request.delete_files:
-            print("replace files: " + str(delete_file))
+    @staticmethod
+    def _files_to_records(request, files: t.List[str]):
+        """
+        Decrypt payload files and generate records.
+        """
+        for filename in files:
+            value = request.keys[filename]
+            logger.info(f"Decrypting file: {filename}")
+            for record in read_csv.decrypt_file(filename, value):
+                # Rename keys according to field map.
+                record = CrateDBKnowledge.rename_keys(record)
+                yield record
 
-        log_message(WARNING, "Data loading started for table " + request.table.name)
-        for key, value in request.keys.items():
-            print("----------------------------------------------------------------------------")
-            print("Decrypting and printing file :" + str(key))
-            print("----------------------------------------------------------------------------")
-            read_csv.decrypt_file(key, value)
-        log_message(INFO, "\nData loading completed for table " + request.table.name + "\n")
+    def WriteBatch(self, request, context):
+        """
+        Upsert records using SQL.
+
+        Status: 70%
+        """
+
+        table = sa.Table(
+            request.table.name,
+            self.metadata,
+            schema=request.schema_name,
+            quote_schema=True,
+            autoload_with=self.engine,
+        )
+        primary_keys = [column.name for column in table.primary_key.columns]
+
+        table_info = TableInfo(
+            fullname=f'"{request.schema_name}"."{request.table.name}"', primary_keys=primary_keys
+        )
+
+        log_message(INFO, f"Data loading started for table: {request.table.name}")
+        self.processor.process(
+            table_info=table_info,
+            upsert_records=self._files_to_records(request, request.replace_files),
+            update_records=self._files_to_records(request, request.update_files),
+            delete_records=self._files_to_records(request, request.delete_files),
+        )
+        log_message(INFO, f"Data loading completed for table: {request.table.name}")
 
         res: destination_sdk_pb2.WriteBatchResponse = destination_sdk_pb2.WriteBatchResponse(
             success=True
@@ -238,6 +321,11 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         return res
 
     def DescribeTable(self, request, context):
+        """
+        FIXME: Reflect table schema using SQLAlchemy.
+
+        Status: 0%
+        """
         column1 = common_pb2.Column(
             name="a1", type=common_pb2.DataType.UNSPECIFIED, primary_key=True
         )
@@ -250,10 +338,18 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
 
 def log_message(level, message):
-    print(f'{{"level":"{level}", "message": "{message}", "message-origin": "sdk_destination"}}')
+    print(f'{{"level":"{level}", "message": "{message}", "message-origin": "sdk_destination"}}')  # noqa: T201
+
+
+def setup_logging(level=logging.INFO, verbose: bool = False):
+    if verbose:
+        level = logging.DEBUG
+    log_format = "%(asctime)-15s [%(name)-26s] %(levelname)-8s: %(message)s"
+    logging.basicConfig(format=log_format, stream=sys.stderr, level=level, force=True)
 
 
 def start_server():
+    setup_logging()
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
     server.add_insecure_port("[::]:50052")
     destination_sdk_pb2_grpc.add_DestinationConnectorServicer_to_server(
@@ -265,6 +361,6 @@ def start_server():
 
 if __name__ == "__main__":  # pragma: no cover
     server = start_server()
-    print("Destination gRPC server started...")
+    logger.info("Destination gRPC server started")
     server.wait_for_termination()
-    print("Destination gRPC server terminated...")
+    logger.info("Destination gRPC server terminated")
