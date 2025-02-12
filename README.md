@@ -41,6 +41,12 @@ ERPs, and files to data warehouses, data lakes, and more.
 pip install --upgrade cratedb-fivetran-destination
 ```
 
+## Usage
+
+```bash
+python -m cratedb_fivetran_destination.main
+```
+
 ## Requirements
 
 The package is based on [CrateDB's SQLAlchemy dialect] package.
