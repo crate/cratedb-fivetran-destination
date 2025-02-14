@@ -212,20 +212,17 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
     def Test(self, request, context):
         """
-        FIXME: Verify database connectivity.
-
-        Status: 0%
+        Verify database connectivity with configured connection parameters.
         """
+        log_message(INFO, f"Test database connection: {request.name}")
         self._configure_database(request.configuration.get("url"))
-        test_name = request.name
-        log_message(INFO, "test name: " + test_name)
+        with self.engine.connect() as connection:
+            connection.execute(sa.text("SELECT 42"))
         return common_pb2.TestResponse(success=True)
 
     def CreateTable(self, request, context):
         """
         Create database table using SQLAlchemy.
-
-        Status: 80%
         """
         self._configure_database(request.configuration.get("url"))
         logger.info(
@@ -258,6 +255,11 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         return destination_sdk_pb2.CreateTableResponse(success=True)
 
     def AlterTable(self, request, context):
+        """
+        Alter schema of database table.
+
+        FIXME: Not implemented yet.
+        """
         self._configure_database(request.configuration.get("url"))
         res: destination_sdk_pb2.AlterTableResponse  # noqa: F842
         logger.info(
@@ -272,9 +274,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
     def Truncate(self, request, context):
         """
-        Truncate database table using plain SQL.
-
-        Status: 100%
+        Truncate database table.
         """
         self._configure_database(request.configuration.get("url"))
         logger.info(
@@ -307,8 +307,6 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
     def WriteBatch(self, request, context):
         """
         Upsert records using SQL.
-
-        Status: 70%
         """
         self._configure_database(request.configuration.get("url"))
 
@@ -341,9 +339,9 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
     def DescribeTable(self, request, context):
         """
-        FIXME: Reflect table schema using SQLAlchemy.
+        Reflect table schema using SQLAlchemy.
 
-        Status: 0%
+        FIXME: Not implemented yet.
         """
         self._configure_database(request.configuration.get("url"))
 
