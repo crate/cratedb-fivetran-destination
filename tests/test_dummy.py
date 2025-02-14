@@ -27,6 +27,6 @@ def test_destination(capsys):
     # Check stdout.
     out, err = capsys.readouterr()
     assert (
-        out
-        == '{"level":"INFO", "message": "test name: foo", "message-origin": "sdk_destination"}\n'
+        out == '{"level":"INFO", "message": "Test database connection: foo", '
+        '"message-origin": "sdk_destination"}\n'
     )
