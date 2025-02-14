@@ -9,3 +9,4 @@
 - Added example destination blueprint
 - Added software integration tests
 - DML: Added SQLAlchemy backend implementation for upsert, update, delete
+- Connect: Added `url` form field, accepting an SQLAlchemy database connection URL

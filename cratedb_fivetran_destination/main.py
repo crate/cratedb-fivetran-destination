@@ -29,8 +29,8 @@ logger = logging.getLogger()
 class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServicer):
     def __init__(self):
         self.metadata = sa.MetaData()
-        self.engine = sa.create_engine("crate://")
-        self.processor = Processor(engine=self.engine)
+        self.engine: sa.Engine = None
+        self.processor: Processor = None
 
     def ConfigurationForm(self, request, context):
         log_message(INFO, "Fetching configuration form")
@@ -47,6 +47,15 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             description="Choose the destination type",
             dropdown_field=common_pb2.DropdownField(dropdown_field=["Database", "File", "Cloud"]),
             default_value="Database",
+        )
+
+        # SQLAlchemy database connection URL.
+        url = common_pb2.FormField(
+            name="url",
+            label="SQLAlchemy URL",
+            text_field=common_pb2.TextField.PlainText,
+            placeholder="crate://localhost:4200",
+            default_value="crate://",
         )
 
         # host field
@@ -156,7 +165,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         # Create conditional fields for Database
         conditional_fields_for_database = common_pb2.ConditionalFields(
             condition=visibility_condition_for_database,
-            fields=[host, port, user, password, database, table],
+            fields=[url, host, port, user, password, database, table],
         )
 
         # Add conditional fields to the form
@@ -196,12 +205,18 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
         return form_fields
 
+    def _configure_database(self, url):
+        if not self.engine:
+            self.engine = sa.create_engine(url)
+            self.processor = Processor(engine=self.engine)
+
     def Test(self, request, context):
         """
         FIXME: Verify database connectivity.
 
         Status: 0%
         """
+        self._configure_database(request.configuration.get("url"))
         test_name = request.name
         log_message(INFO, "test name: " + test_name)
         return common_pb2.TestResponse(success=True)
@@ -212,6 +227,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
         Status: 80%
         """
+        self._configure_database(request.configuration.get("url"))
         logger.info(
             "[CreateTable] :"
             + str(request.schema_name)
@@ -242,6 +258,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         return destination_sdk_pb2.CreateTableResponse(success=True)
 
     def AlterTable(self, request, context):
+        self._configure_database(request.configuration.get("url"))
         res: destination_sdk_pb2.AlterTableResponse  # noqa: F842
         logger.info(
             "[AlterTable]: "
@@ -259,6 +276,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
         Status: 100%
         """
+        self._configure_database(request.configuration.get("url"))
         logger.info(
             "[TruncateTable]: "
             + str(request.schema_name)
@@ -292,6 +310,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
         Status: 70%
         """
+        self._configure_database(request.configuration.get("url"))
 
         table = sa.Table(
             request.table.name,
@@ -326,6 +345,8 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
         Status: 0%
         """
+        self._configure_database(request.configuration.get("url"))
+
         column1 = common_pb2.Column(
             name="a1", type=common_pb2.DataType.UNSPECIFIED, primary_key=True
         )
