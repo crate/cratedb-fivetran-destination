@@ -16,8 +16,11 @@ def test_destination(capsys):
     destination = CrateDBDestinationImpl()
 
     # Invoke test function.
+    config = {}
+    config["url"] = "crate://"
     response = destination.Test(
-        request=common_pb2.TestRequest(name="foo"), context=common_pb2.TestResponse()
+        request=common_pb2.TestRequest(name="foo", configuration=config),
+        context=common_pb2.TestResponse(),
     )
     assert response.success is True
 

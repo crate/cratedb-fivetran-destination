@@ -1,5 +1,6 @@
 {
   "writerType": "Database",
+  "url": "crate://",
   "database": "doc",
   "table": "testdrive",
   "host": "localhost",
