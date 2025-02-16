@@ -205,11 +205,6 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
         return form_fields
 
-    def _configure_database(self, url):
-        if not self.engine:
-            self.engine = sa.create_engine(url)
-            self.processor = Processor(engine=self.engine)
-
     def Test(self, request, context):
         """
         Verify database connectivity with configured connection parameters.
@@ -291,38 +286,12 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             )
         return destination_sdk_pb2.TruncateResponse(success=True)
 
-    @staticmethod
-    def _files_to_records(request, files: t.List[str]):
-        """
-        Decrypt payload files and generate records.
-        """
-        for filename in files:
-            value = request.keys[filename]
-            logger.info(f"Decrypting file: {filename}")
-            for record in read_csv.decrypt_file(filename, value):
-                # Rename keys according to field map.
-                record = CrateDBKnowledge.rename_keys(record)
-                yield record
-
     def WriteBatch(self, request, context):
         """
         Upsert records using SQL.
         """
         self._configure_database(request.configuration.get("url"))
-
-        table = sa.Table(
-            request.table.name,
-            self.metadata,
-            schema=request.schema_name,
-            quote_schema=True,
-            autoload_with=self.engine,
-        )
-        primary_keys = [column.name for column in table.primary_key.columns]
-
-        table_info = TableInfo(
-            fullname=f'"{request.schema_name}"."{request.table.name}"', primary_keys=primary_keys
-        )
-
+        table_info = self._table_info_from_request(request)
         log_message(INFO, f"Data loading started for table: {request.table.name}")
         self.processor.process(
             table_info=table_info,
@@ -354,6 +323,41 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         )
         log_message(SEVERE, "Sample severe message: Completed fetching table info")
         return destination_sdk_pb2.DescribeTableResponse(not_found=False, table=table)
+
+    def _configure_database(self, url):
+        if not self.engine:
+            self.engine = sa.create_engine(url)
+            self.processor = Processor(engine=self.engine)
+
+    @staticmethod
+    def _files_to_records(request, files: t.List[str]):
+        """
+        Decrypt payload files and generate records.
+        """
+        for filename in files:
+            value = request.keys[filename]
+            logger.info(f"Decrypting file: {filename}")
+            for record in read_csv.decrypt_file(filename, value):
+                # Rename keys according to field map.
+                record = CrateDBKnowledge.rename_keys(record)
+                yield record
+
+    def _table_info_from_request(self, request) -> TableInfo:
+        """
+        Compute TableInfo data.
+        """
+        table = sa.Table(
+            request.table.name,
+            self.metadata,
+            schema=request.schema_name,
+            quote_schema=True,
+            autoload_with=self.engine,
+        )
+        primary_keys = [column.name for column in table.primary_key.columns]
+
+        return TableInfo(
+            fullname=f'"{request.schema_name}"."{request.table.name}"', primary_keys=primary_keys
+        )
 
 
 def log_message(level, message):
