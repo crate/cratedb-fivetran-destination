@@ -53,6 +53,28 @@ class CrateDBKnowledge:
         return cls.type_map.get(fivetran_type, cls.default_type)
 
 
+class FivetranKnowledge:
+    """
+    Manage special knowledge about Fivetran.
+
+    Fivetran uses special values for designating NULL and CDC-unmodified values.
+    """
+
+    NULL_STRING = "null-m8yilkvPsNulehxl2G6pmSQ3G3WWdLP"
+    UNMODIFIED_STRING = "unmod-NcK9NIjPUutCsz4mjOQQztbnwnE1sY3"
+
+    @classmethod
+    def replace_values(cls, record):
+        rm_list = []
+        for key, value in record.items():
+            if value == cls.NULL_STRING:
+                record[key] = None
+            elif value == cls.UNMODIFIED_STRING:
+                rm_list.append(key)
+        for rm in rm_list:
+            record.pop(rm)
+
+
 @define
 class TableInfo:
     fullname: str

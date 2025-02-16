@@ -11,6 +11,7 @@ import sqlalchemy as sa
 from cratedb_fivetran_destination.sdk_pb2.common_pb2 import Column
 from cratedb_fivetran_destination.util import (
     CrateDBKnowledge,
+    FivetranKnowledge,
     Processor,
     TableInfo,
 )
@@ -340,6 +341,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             for record in read_csv.decrypt_file(filename, value):
                 # Rename keys according to field map.
                 record = CrateDBKnowledge.rename_keys(record)
+                FivetranKnowledge.replace_values(record)
                 yield record
 
     def _table_info_from_request(self, request) -> TableInfo:
