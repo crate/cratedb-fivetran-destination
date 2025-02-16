@@ -11,3 +11,5 @@
 - DML: Added SQLAlchemy backend implementation for upsert, update, delete
 - Connect: Added `url` form field, accepting an SQLAlchemy database connection URL
 - Connect: Implemented adapter's `Test` method
+- Transform: Fivetran uses special values for designating `NULL` and
+  CDC-unmodified values.
