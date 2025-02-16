@@ -4,9 +4,10 @@ import pytest
 import sqlalchemy as sa
 
 from cratedb_fivetran_destination import __version__
+from cratedb_fivetran_destination.engine import Processor
 from cratedb_fivetran_destination.main import setup_logging
+from cratedb_fivetran_destination.model import TableInfo
 from cratedb_fivetran_destination.sdk_pb2 import common_pb2
-from cratedb_fivetran_destination.util import Processor, TableInfo
 
 
 def test_dummy():

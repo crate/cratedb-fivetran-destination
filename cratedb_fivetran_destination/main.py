@@ -8,13 +8,9 @@ from concurrent import futures
 import grpc
 import sqlalchemy as sa
 
+from cratedb_fivetran_destination.engine import Processor
+from cratedb_fivetran_destination.model import CrateDBKnowledge, FivetranKnowledge, TableInfo
 from cratedb_fivetran_destination.sdk_pb2.common_pb2 import Column
-from cratedb_fivetran_destination.util import (
-    CrateDBKnowledge,
-    FivetranKnowledge,
-    Processor,
-    TableInfo,
-)
 
 from . import read_csv
 from .sdk_pb2 import common_pb2, destination_sdk_pb2, destination_sdk_pb2_grpc
