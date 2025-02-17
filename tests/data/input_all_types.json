@@ -1,0 +1,55 @@
+{
+  "create_table": {
+    "all_types": {
+      "columns": {
+        "unspecified": "UNSPECIFIED",
+        "boolean": "BOOLEAN",
+        "short": "SHORT",
+        "int": "INT",
+        "long": "LONG",
+        "float": "FLOAT",
+        "double": "DOUBLE",
+        "naive_date": "NAIVE_DATE",
+        "naive_datetime": "NAIVE_DATETIME",
+        "utc_datetime": "UTC_DATETIME",
+        "decimal": {
+          "type": "DECIMAL",
+          "precision": 6,
+          "scale": 3
+        },
+        "binary": "BINARY",
+        "string": "STRING",
+        "json": "JSON",
+        "xml": "XML",
+        "naive_time": "NAIVE_TIME"
+      }
+    }
+  },
+  "ops": [
+    {
+      "upsert": {
+        "all_types": [
+          {
+            "_fivetran_id": "zyx-987-abc",
+            "unspecified": "FOO",
+            "boolean": true,
+            "short": 42,
+            "int": 42,
+            "long": 42,
+            "float": 42.42,
+            "double": 42.42,
+            "naive_date": "1970-01-02T00:00:00+01:00",
+            "naive_datetime": "1970-01-02T00:00:00+01:00",
+            "utc_datetime": "1970-01-02T00:00:00+01:00",
+            "decimal": 42.42,
+            "binary": "\\0x00\\0x01",
+            "string": "Hotzenplotz",
+            "json": "{\"foo\": \"bar\", \"count\": 42}",
+            "xml": "XML",
+            "naive_time": "1970-01-02T00:00:00+01:00"
+          }
+        ]
+      }
+    }
+  ]
+}

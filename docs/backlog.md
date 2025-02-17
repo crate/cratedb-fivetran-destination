@@ -1,10 +1,6 @@
 # Backlog
 
 ## Iteration +1
-- Basic/easy connectivity using `SQLALCHEMY_CRATEDB_URL`,
-  for connecting to CrateDB and CrateDB Cloud.
-- Complete `DataType.*` and `RecordType.{UPSERT,UPDATE,DELETE,TRUNCATE}`,
-  see `cratedb_fivetran_destination/sdk_pb2/common_pb2.pyi`.
 - Release v0.0.0
 
 ## Iteration +2
@@ -28,3 +24,7 @@
 ## Done
 - Make it work
 - Add integration test harness
+- Basic/easy connectivity using `SQLALCHEMY_CRATEDB_URL`,
+  for connecting to CrateDB and CrateDB Cloud.
+- Complete `DataType.*` and `RecordType.{UPSERT,UPDATE,DELETE,TRUNCATE}`,
+  see `cratedb_fivetran_destination/sdk_pb2/common_pb2.pyi`.

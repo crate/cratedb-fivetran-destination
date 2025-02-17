@@ -13,3 +13,4 @@
 - Connect: Implemented adapter's `Test` method
 - Transform: Fivetran uses special values for designating `NULL` and
   CDC-unmodified values.
+- Types: Added support for all Fivetran data types
