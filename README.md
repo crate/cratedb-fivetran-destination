@@ -35,6 +35,14 @@ Fivetran is an automated data movement platform. Automatically, reliably and
 securely move data from 650+ sources including SaaS applications, databases,
 ERPs, and files to data warehouses, data lakes, and more.
 
+## Requirements
+
+The package is based on [CrateDB's SQLAlchemy dialect] package.
+It will be automatically installed when installing the Fivetran adapter.
+
+You can run [CrateDB Self-Managed] or start using [CrateDB Cloud],
+see [CrateDB Installation], or [CrateDB Cloud Console].
+
 ## Installation
 
 ```bash
@@ -48,21 +56,12 @@ Start gRPC destination server.
 python -m cratedb_fivetran_destination.main
 ```
 
-## Requirements
+## Status
 
-The package is based on [CrateDB's SQLAlchemy dialect] package.
-It will be automatically installed when installing the Fivetran adapter.
-
-You can run [CrateDB Self-Managed] or start using [CrateDB Cloud],
-see [CrateDB Installation], or [CrateDB Cloud Console].
-
-## Usage
-
-To learn about the Fivetran destination adapter for CrateDB, please refer to the
-documentation and examples:
-
-- FIXME
-
+The adapter is still in its infancy and needs exposure to remedy teething
+problems. On its next iterations, we will evaluate if the encoding style
+needs to be adjusted, and if the type mapping needs adjustments. We will
+also take care about a few more other details around easing deployment.
 
 ## Project Information
 
