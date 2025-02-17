@@ -103,7 +103,7 @@ urls."Release Notes" = "https://github.com/crate-workbench/cratedb-fivetran-dest
 urls.Repository = "https://github.com/crate-workbench/cratedb-fivetran-destination"
 
 [tool.setuptools]
-packages.find = {}
+packages = ["cratedb_fivetran_destination"]
 
 [tool.ruff]
 line-length = 100
