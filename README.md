@@ -59,9 +59,15 @@ python -m cratedb_fivetran_destination.main
 ## Status
 
 The adapter is still in its infancy and needs exposure to remedy teething
-problems. On its next iterations, we will evaluate if the encoding style
-needs to be adjusted, and if the type mapping needs adjustments. We will
-also take care about a few more other details around easing deployment.
+problems.
+
+On its next iterations, we will evaluate if the encoding (column mapping) style
+needs to be adjusted, and if the type mapping needs improvements.
+We will also take care about a few more other details around easing deployment.
+
+Also, the adapter still lacks implementations for the `AlterTable` and
+`DescribeTable` methods, which will be submitted on subsequent iterations.
+Contributions are welcome.
 
 ## Project Information
 
