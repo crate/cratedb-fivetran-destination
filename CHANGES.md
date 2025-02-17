@@ -3,7 +3,7 @@
 
 ## Unreleased
 
-## v0.0.0 - 2025-02-xx
+## v0.0.0 - 2025-02-17
 - Added project skeleton
 - Added generated SDK GRPC API stubs
 - Added example destination blueprint
