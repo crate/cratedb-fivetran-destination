@@ -2,9 +2,12 @@ import subprocess
 import threading
 from textwrap import dedent
 from time import sleep
+from unittest import mock
 
 import pytest
 import sqlalchemy as sa
+from sqlalchemy.sql.type_api import UserDefinedType
+from sqlalchemy_cratedb import ObjectType
 
 
 def run(command: str, background: bool = False):
@@ -14,15 +17,20 @@ def run(command: str, background: bool = False):
     return None
 
 
+@pytest.fixture
+def engine():
+    return sa.create_engine("crate://")
+
+
 @pytest.fixture(autouse=True)
-def reset_tables():
-    engine = sa.create_engine("crate://")
+def reset_tables(engine):
     with engine.connect() as connection:
+        connection.execute(sa.text("DROP TABLE IF EXISTS tester.all_types"))
         connection.execute(sa.text("DROP TABLE IF EXISTS tester.campaign"))
         connection.execute(sa.text("DROP TABLE IF EXISTS tester.transaction"))
 
 
-@pytest.fixture
+@pytest.fixture()
 def services():
     """
     Invoke the CrateDB Fivetran destination gRPC adapter and the Fivetran destination tester.
@@ -72,10 +80,78 @@ def services():
         proc.wait(3)
 
 
-def test_integration(capfd, services):
+# The record that is inserted into the database.
+RECORD_REFERENCE = dict(  # noqa: C408
+    unspecified="FOO",
+    boolean=True,
+    short=42,
+    int=42,
+    long=42,
+    float=42.42,
+    double=42.42,
+    naive_date=86400000,
+    naive_datetime=86400000,
+    utc_datetime=86400000,
+    decimal=42.42,
+    binary="\\0x00\\0x01",
+    string="Hotzenplotz",
+    json={"count": 42, "foo": "bar"},
+    xml="XML",
+    naive_time=86400000,
+    __fivetran_synced=mock.ANY,
+    __fivetran_id="zyx-987-abc",
+    __fivetran_deleted=None,
+)
+
+
+def test_integration(capfd, services, engine):
     """
     Verify the Fivetran destination tester runs to completion.
     """
+    metadata = sa.MetaData()
+
+    table_current = sa.Table(  # noqa: F841
+        "all_types",
+        metadata,
+        schema="tester",
+        quote_schema=True,
+        autoload_with=engine,
+    )
+
+    table_reference = sa.Table(
+        "all_types",
+        metadata,
+        sa.Column("unspecified", sa.String),
+        sa.Column("bool", sa.Boolean),
+        sa.Column("short", sa.Integer),
+        sa.Column("int", sa.Integer),
+        sa.Column("long", sa.BigInteger),
+        sa.Column("float", sa.Float),
+        sa.Column("double", sa.Float),
+        sa.Column("naive_date", UserDefinedType),
+        sa.Column("naive_datetime", UserDefinedType),
+        sa.Column("utc_datetime", UserDefinedType),
+        sa.Column("decimal", sa.DECIMAL),
+        sa.Column("binary", sa.Text),
+        sa.Column("string", sa.String),
+        sa.Column("json", ObjectType),
+        sa.Column("xml", sa.String),
+        sa.Column("naive_time", UserDefinedType),
+        sa.Column("__fivetran_synced", UserDefinedType),
+        sa.Column("__fivetran_id", sa.String),
+        sa.Column("__fivetran_deleted", sa.Boolean),
+        schema="tester_reference",
+        quote_schema=True,
+    )
+    table_reference.schema = "tester"
+
+    # FIXME: Comparison does not work like this, yet.
+    #        Use Alembic's `compare()` primitive?
+    # assert table_current == table_reference  # noqa: ERA001
+
+    with engine.connect() as connection:
+        records = connection.execute(sa.text("SELECT * FROM tester.all_types")).mappings().one()
+        assert records == RECORD_REFERENCE
 
     # Read out stdout and stderr.
     out, err = capfd.readouterr()

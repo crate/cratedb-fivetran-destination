@@ -3,6 +3,7 @@ import typing as t
 import sqlalchemy as sa
 from attr import Factory
 from attrs import define
+from sqlalchemy_cratedb import ObjectType
 from tikray.util.dictx import OrderedDictX
 
 from cratedb_fivetran_destination.sdk_pb2.common_pb2 import DataType
@@ -21,11 +22,24 @@ class CrateDBKnowledge:
     }
 
     # Map Fivetran types to CrateDB types.
-    # FIXME: Add more type mappings.
-    # Status: 10%
     default_type = sa.Text()
     type_map = {
+        DataType.UNSPECIFIED: sa.Text(),
+        DataType.BOOLEAN: sa.Boolean(),
+        DataType.SHORT: sa.Integer(),
         DataType.INT: sa.Integer(),
+        DataType.LONG: sa.BigInteger(),
+        DataType.FLOAT: sa.Float(),
+        DataType.DOUBLE: sa.Float(),
+        DataType.NAIVE_DATE: sa.Date(),
+        DataType.NAIVE_DATETIME: sa.DateTime(),
+        DataType.UTC_DATETIME: sa.DateTime(),
+        DataType.DECIMAL: sa.DECIMAL(),
+        DataType.BINARY: sa.Text(),
+        DataType.STRING: sa.String(),
+        DataType.JSON: ObjectType,
+        DataType.XML: sa.String(),
+        DataType.NAIVE_TIME: sa.DateTime(),
     }
 
     @classmethod
