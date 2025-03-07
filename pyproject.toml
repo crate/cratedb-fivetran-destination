@@ -98,9 +98,9 @@ optional-dependencies.test = [
   "pytest<9",
   "pytest-cov<7",
 ]
-urls."Release Notes" = "https://github.com/crate-workbench/cratedb-fivetran-destination/releases"
+urls."Release Notes" = "https://github.com/crate/cratedb-fivetran-destination/releases"
 
-urls.Repository = "https://github.com/crate-workbench/cratedb-fivetran-destination"
+urls.Repository = "https://github.com/crate/cratedb-fivetran-destination"
 
 [tool.setuptools]
 packages = ["cratedb_fivetran_destination"]

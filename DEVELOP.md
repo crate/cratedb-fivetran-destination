@@ -2,7 +2,7 @@
 
 ## Set up sandbox
 ```shell
-git clone https://github.com/crate-workbench/cratedb-fivetran-destination.git
+git clone https://github.com/crate/cratedb-fivetran-destination.git
 cd cratedb-fivetran-destination
 uv venv --seed
 source .venv/bin/activate
