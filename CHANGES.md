@@ -5,7 +5,7 @@
 
 ## v0.0.0 - 2025-02-17
 - Added project skeleton
-- Added generated SDK GRPC API stubs
+- Added generated SDK gRPC API stubs
 - Added example destination blueprint
 - Added software integration tests
 - DML: Added SQLAlchemy backend implementation for upsert, update, delete

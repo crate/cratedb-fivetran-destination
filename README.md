@@ -89,29 +89,29 @@ The project uses the Apache license, like CrateDB itself.
 [CrateDB Installation]: https://cratedb.com/docs/guide/install/
 [CrateDB Self-Managed]: https://cratedb.com/database/self-managed
 [CrateDB's SQLAlchemy dialect]: https://cratedb.com/docs/sqlalchemy-cratedb/
-[CrateDBVectorStore]: https://github.com/crate-workbench/cratedb-fivetran-destination/blob/cratedb/docs/vectorstores.ipynb
+[CrateDBVectorStore]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/docs/vectorstores.ipynb
 [crate]: https://pypi.org/project/crate/
 
-[Changelog]: https://github.com/crate-workbench/cratedb-fivetran-destination/blob/cratedb/CHANGES.md
+[Changelog]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/CHANGES.md
 [Community Forum]: https://community.cratedb.com/
 [Documentation]: https://cratedb.com/docs/guide/integrate/fivetran/
-[Issues]: https://github.com/crate-workbench/cratedb-fivetran-destination/issues
-[License]: https://github.com/crate-workbench/cratedb-fivetran-destination/blob/cratedb/LICENSE
-[managed on GitHub]: https://github.com/crate-workbench/cratedb-fivetran-destination
+[Issues]: https://github.com/crate/cratedb-fivetran-destination/issues
+[License]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/LICENSE
+[managed on GitHub]: https://github.com/crate/cratedb-fivetran-destination
 [PyPI]: https://pypi.org/project/cratedb-fivetran-destination/
-[Source code]: https://github.com/crate-workbench/cratedb-fivetran-destination
+[Source code]: https://github.com/crate/cratedb-fivetran-destination
 
 [badge-bluesky]: https://img.shields.io/badge/Bluesky-0285FF?logo=bluesky&logoColor=fff&label=Follow%20%40CrateDB
-[badge-ci]: https://github.com/crate-workbench/cratedb-fivetran-destination/actions/workflows/tests.yml/badge.svg
+[badge-ci]: https://github.com/crate/cratedb-fivetran-destination/actions/workflows/tests.yml/badge.svg
 [badge-downloads-per-month]: https://pepy.tech/badge/cratedb-fivetran-destination/month
-[badge-license]: https://img.shields.io/github/license/crate-workbench/cratedb-fivetran-destination.svg
+[badge-license]: https://img.shields.io/github/license/crate/cratedb-fivetran-destination.svg
 [badge-package-version]: https://img.shields.io/pypi/v/cratedb-fivetran-destination.svg
 [badge-python-versions]: https://img.shields.io/pypi/pyversions/cratedb-fivetran-destination.svg
-[badge-release-notes]: https://img.shields.io/github/release/crate-workbench/cratedb-fivetran-destination?label=Release+Notes
+[badge-release-notes]: https://img.shields.io/github/release/crate/cratedb-fivetran-destination?label=Release+Notes
 [badge-status]: https://img.shields.io/pypi/status/cratedb-fivetran-destination.svg
 [project-bluesky]: https://bsky.app/search?q=cratedb
-[project-ci]: https://github.com/crate-workbench/cratedb-fivetran-destination/actions/workflows/tests.yml
+[project-ci]: https://github.com/crate/cratedb-fivetran-destination/actions/workflows/tests.yml
 [project-downloads]: https://pepy.tech/project/cratedb-fivetran-destination/
-[project-license]: https://github.com/crate-workbench/cratedb-fivetran-destination/blob/cratedb/LICENSE
+[project-license]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/LICENSE
 [project-pypi]: https://pypi.org/project/cratedb-fivetran-destination
-[project-release-notes]: https://github.com/crate-workbench/cratedb-fivetran-destination/releases
+[project-release-notes]: https://github.com/crate/cratedb-fivetran-destination/releases
