@@ -77,7 +77,7 @@ dependencies = [
   "protobuf<5.30",
   "pycryptodome<3.22",
   "sqlalchemy-cratedb<0.42",
-  "tikray<0.1",
+  "tikray<0.3",
   "toolz<2",
   "zstandard<0.24",
 ]
