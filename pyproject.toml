@@ -74,7 +74,7 @@ dependencies = [
   "google<3.1",
   "grpcio<1.71",
   "grpcio-tools<1.71",
-  "protobuf<5.30",
+  "protobuf<6.31",
   "pycryptodome<3.22",
   "sqlalchemy-cratedb<0.42",
   "tikray<0.1",
