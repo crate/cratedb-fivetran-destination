@@ -3,6 +3,7 @@
 [![Bluesky][badge-bluesky]][project-bluesky]
 [![Release Notes][badge-release-notes]][project-release-notes]
 [![CI][badge-ci]][project-ci]
+[![Coverage][badge-coverage]][project-coverage]
 [![Downloads per month][badge-downloads-per-month]][project-downloads]
 
 [![Package version][badge-package-version]][project-pypi]
@@ -103,6 +104,7 @@ The project uses the Apache license, like CrateDB itself.
 
 [badge-bluesky]: https://img.shields.io/badge/Bluesky-0285FF?logo=bluesky&logoColor=fff&label=Follow%20%40CrateDB
 [badge-ci]: https://github.com/crate/cratedb-fivetran-destination/actions/workflows/tests.yml/badge.svg
+[badge-coverage]: https://codecov.io/gh/crate/cratedb-fivetran-destination/branch/main/graph/badge.svg
 [badge-downloads-per-month]: https://pepy.tech/badge/cratedb-fivetran-destination/month
 [badge-license]: https://img.shields.io/github/license/crate/cratedb-fivetran-destination.svg
 [badge-package-version]: https://img.shields.io/pypi/v/cratedb-fivetran-destination.svg
@@ -111,6 +113,7 @@ The project uses the Apache license, like CrateDB itself.
 [badge-status]: https://img.shields.io/pypi/status/cratedb-fivetran-destination.svg
 [project-bluesky]: https://bsky.app/search?q=cratedb
 [project-ci]: https://github.com/crate/cratedb-fivetran-destination/actions/workflows/tests.yml
+[project-coverage]: https://app.codecov.io/gh/crate/cratedb-fivetran-destination
 [project-downloads]: https://pepy.tech/project/cratedb-fivetran-destination/
 [project-license]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/LICENSE
 [project-pypi]: https://pypi.org/project/cratedb-fivetran-destination
