@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from cratedb_fivetran_destination import __version__
 from cratedb_fivetran_destination.engine import Processor
 from cratedb_fivetran_destination.model import TableInfo
-from cratedb_fivetran_destination.sdk_pb2 import common_pb2
+from cratedb_fivetran_destination.sdk_pb2 import common_pb2, destination_sdk_pb2
 from cratedb_fivetran_destination.util import format_log_message, setup_logging
 
 
@@ -67,6 +67,76 @@ def test_api_configuration_form(capsys):
     # Check log output.
     out, err = capsys.readouterr()
     assert out == format_log_message("Fetching configuration form", newline=True)
+
+
+def test_api_describe_table_found(engine, capsys):
+    """
+    Invoke gRPC API method `DescribeTable` on an existing table.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    destination = CrateDBDestinationImpl()
+
+    with engine.connect() as conn:
+        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
+        conn.execute(sa.text("CREATE TABLE testdrive.foo (id INT)"))
+
+    # Invoke gRPC API method under test.
+    config = {"url": "crate://"}
+    response = destination.DescribeTable(
+        request=destination_sdk_pb2.DescribeTableRequest(
+            table_name="foo", schema_name="testdrive", configuration=config
+        ),
+        context=destination_sdk_pb2.DescribeTableResponse(),
+    )
+
+    # Validate outcome.
+    assert response.not_found is False
+    assert response.warning.message == ""
+    assert response.table == common_pb2.Table(
+        name="foo",
+        columns=[
+            common_pb2.Column(
+                name="id",
+                type=common_pb2.DataType.INT,
+                primary_key=False,
+            )
+        ],
+    )
+
+    # Check log output.
+    out, err = capsys.readouterr()
+    assert "Completed fetching table info" in out
+
+
+def test_api_describe_table_not_found(capsys):
+    """
+    Invoke gRPC API method `DescribeTable` on an existing table.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    destination = CrateDBDestinationImpl()
+
+    # Invoke gRPC API method under test.
+    config = {"url": "crate://"}
+    response = destination.DescribeTable(
+        request=destination_sdk_pb2.DescribeTableRequest(
+            table_name="unknown", schema_name="testdrive", configuration=config
+        ),
+        context=destination_sdk_pb2.DescribeTableResponse(),
+    )
+
+    # Validate outcome.
+    assert response.not_found is False
+    assert response.warning.message == "Table not found: unknown"
+    assert response.table.name == ""
+    assert response.table.columns == []
+
+    # Check log output.
+    out, err = capsys.readouterr()
+    assert out == format_log_message(
+        "DescribeTable: Table not found: unknown", level="WARNING", newline=True
+    )
 
 
 def test_processor_failing(engine):
