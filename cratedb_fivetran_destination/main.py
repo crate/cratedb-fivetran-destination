@@ -1,7 +1,6 @@
 # ruff: noqa: S608  # Possible SQL injection vector through string-based query construction
 # Source: https://github.com/fivetran/fivetran_sdk/tree/v2/examples/destination_connector/python
 import logging
-import sys
 import typing as t
 from concurrent import futures
 
@@ -11,14 +10,10 @@ import sqlalchemy as sa
 from cratedb_fivetran_destination.engine import Processor
 from cratedb_fivetran_destination.model import CrateDBKnowledge, FivetranKnowledge, TableInfo
 from cratedb_fivetran_destination.sdk_pb2.common_pb2 import Column
+from cratedb_fivetran_destination.util import LOG_INFO, log_message, setup_logging
 
 from . import read_csv
 from .sdk_pb2 import common_pb2, destination_sdk_pb2, destination_sdk_pb2_grpc
-
-INFO = "INFO"
-WARNING = "WARNING"
-SEVERE = "SEVERE"
-
 
 logger = logging.getLogger()
 
@@ -30,7 +25,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         self.processor: Processor = None
 
     def ConfigurationForm(self, request, context):
-        log_message(INFO, "Fetching configuration form")
+        log_message(LOG_INFO, "Fetching configuration form")
 
         # Create the form fields
         form_fields = common_pb2.ConfigurationFormResponse(
@@ -206,7 +201,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         """
         Verify database connectivity with configured connection parameters.
         """
-        log_message(INFO, f"Test database connection: {request.name}")
+        log_message(LOG_INFO, f"Test database connection: {request.name}")
         self._configure_database(request.configuration.get("url"))
         with self.engine.connect() as connection:
             connection.execute(sa.text("SELECT 42"))
@@ -287,14 +282,14 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         """
         self._configure_database(request.configuration.get("url"))
         table_info = self._table_info_from_request(request)
-        log_message(INFO, f"Data loading started for table: {request.table.name}")
+        log_message(LOG_INFO, f"Data loading started for table: {request.table.name}")
         self.processor.process(
             table_info=table_info,
             upsert_records=self._files_to_records(request, request.replace_files),
             update_records=self._files_to_records(request, request.update_files),
             delete_records=self._files_to_records(request, request.delete_files),
         )
-        log_message(INFO, f"Data loading completed for table: {request.table.name}")
+        log_message(LOG_INFO, f"Data loading completed for table: {request.table.name}")
 
         res: destination_sdk_pb2.WriteBatchResponse = destination_sdk_pb2.WriteBatchResponse(
             success=True
@@ -315,7 +310,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         table: common_pb2.Table = common_pb2.Table(
             name=request.table_name, columns=[column1, column2]
         )
-        log_message(SEVERE, "Sample severe message: Completed fetching table info")
+        log_message(LOG_INFO, f"Completed fetching table info: {table}")
         return destination_sdk_pb2.DescribeTableResponse(not_found=False, table=table)
 
     def _configure_database(self, url):
@@ -367,17 +362,6 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         else:
             table_name = request.table_name
         return f'"{request.schema_name}"."{table_name}"'
-
-
-def log_message(level, message):
-    print(f'{{"level":"{level}", "message": "{message}", "message-origin": "sdk_destination"}}')  # noqa: T201
-
-
-def setup_logging(level=logging.INFO, verbose: bool = False):
-    if verbose:
-        level = logging.DEBUG
-    log_format = "%(asctime)-15s [%(name)-26s] %(levelname)-8s: %(message)s"
-    logging.basicConfig(format=log_format, stream=sys.stderr, level=level, force=True)
 
 
 def start_server():
