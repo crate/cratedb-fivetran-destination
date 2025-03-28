@@ -31,10 +31,12 @@ def reset_tables(engine):
 
 
 @pytest.fixture()
-def services():
+def services(request):
     """
     Invoke the CrateDB Fivetran destination gRPC adapter and the Fivetran destination tester.
     """
+    data_folder = request.param
+
     processes = []
 
     oci_image = (
@@ -57,9 +59,9 @@ def services():
 
     cmd = dedent(f"""
     docker run --rm \
-      --mount type=bind,source=./tests/data,target=/data \
+      --mount type=bind,source={data_folder},target=/data \
       -a STDIN -a STDOUT -a STDERR \
-      -e WORKING_DIR=./tests/data \
+      -e WORKING_DIR={data_folder} \
       -e GRPC_HOSTNAME=host.docker.internal \
       --network=host \
       --add-host=host.docker.internal:host-gateway \
@@ -104,9 +106,27 @@ RECORD_REFERENCE = dict(  # noqa: C408
 )
 
 
-def test_integration(capfd, services, engine):
+@pytest.mark.parametrize("services", ["./tests/data/fivetran_canonical"], indirect=True)
+def test_integration_fivetran(capfd, services, engine):
     """
-    Verify the Fivetran destination tester runs to completion.
+    Verify the Fivetran destination tester runs to completion with Fivetran test data.
+    """
+
+    # Read out stdout and stderr.
+    out, err = capfd.readouterr()
+
+    # "Truncate" is the last software test invoked by the Fivetran destination tester.
+    # If the test case receives corresponding log output, it is considered to be complete.
+    assert "Create Table succeeded" in err
+    assert "Alter Table succeeded" in err
+    assert "WriteBatch succeeded" in err
+    assert "Truncate succeeded: transaction" in err
+
+
+@pytest.mark.parametrize("services", ["./tests/data/cratedb_canonical"], indirect=True)
+def test_integration_cratedb(capfd, services, engine):
+    """
+    Verify the Fivetran destination tester runs to completion with CrateDB test data.
     """
     metadata = sa.MetaData()
 
@@ -145,10 +165,12 @@ def test_integration(capfd, services, engine):
     )
     table_reference.schema = "tester"
 
+    # Compare table schema.
     # FIXME: Comparison does not work like this, yet.
     #        Use Alembic's `compare()` primitive?
     # assert table_current == table_reference  # noqa: ERA001
 
+    # Compare table content.
     with engine.connect() as connection:
         records = connection.execute(sa.text("SELECT * FROM tester.all_types")).mappings().one()
         assert records == RECORD_REFERENCE
@@ -156,9 +178,6 @@ def test_integration(capfd, services, engine):
     # Read out stdout and stderr.
     out, err = capfd.readouterr()
 
-    # "Truncate" is the last software test invoked by the Fivetran destination tester.
     # If the test case receives corresponding log output, it is considered to be complete.
     assert "Create Table succeeded" in err
-    assert "Alter Table succeeded" in err
     assert "WriteBatch succeeded" in err
-    assert "Truncate succeeded: transaction" in err
