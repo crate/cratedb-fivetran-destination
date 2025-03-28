@@ -1,25 +1,28 @@
 # Backlog
 
 ## Iteration +1
-- Release v0.0.0
+- Propagate `warning` messages into responses
+- Strip UI fields, just use `url`
+- Scan for TODO and FIXME items
+- Release v0.0.1
 
 ## Iteration +2
-- Report: `InvalidColumnNameException["_fivetran_synced" conflicts with system column pattern]`
-- Documentation: Project
-- Documentation: CrateDB Examples
+- Documentation: The machinery renames all `_fivetran*` columns to `__fivetran*`
+- Currently, the machinery does not discriminate between `truncate_before`
+  vs. `soft_truncate_before` or `delete` vs. `soft_delete`
 - Documentation: CrateDB Guide
 - Documentation: Upstream
 
 ## Iteration +3
-- Mechanism to ignore errors
-- Currently, the machinery does not discriminate between `truncate_before`
-  vs. `soft_truncate_before` or `delete` vs. `soft_delete`
+- Submit report to https://github.com/crate/crate/issues/15161.
+  `InvalidColumnNameException["_fivetran_synced" conflicts with system column pattern]`
+- Mechanism to ignore errors?
 - Currently, the machinery does not invoke any `REFRESH TABLE` statements (caveat!)
-- The machinery renames all `_fivetran*` columns to `__fivetran*`
-- Import Parquet?
+- Import Parquet for testing purposes?
 
 ## Iteration +4
 - Consider using Golang or Java, like others are doing it
+  https://github.com/crate/cratedb-fivetran-destination/issues/11
 
 ## Done
 - Make it work
@@ -28,3 +31,4 @@
   for connecting to CrateDB and CrateDB Cloud.
 - Complete `DataType.*` and `RecordType.{UPSERT,UPDATE,DELETE,TRUNCATE}`,
   see `cratedb_fivetran_destination/sdk_pb2/common_pb2.pyi`.
+- Release v0.0.0
