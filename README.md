@@ -66,8 +66,8 @@ On its next iterations, we will evaluate if the encoding (column mapping) style
 needs to be adjusted, and if the type mapping needs improvements.
 We will also take care about a few more other details around easing deployment.
 
-Also, the adapter still lacks implementations for the `AlterTable` and
-`DescribeTable` methods, which will be submitted on subsequent iterations.
+Also, the adapter still lacks the implementation for the `AlterTable`
+method, which will be submitted on a subsequent iteration.
 Contributions are welcome.
 
 ## Project Information

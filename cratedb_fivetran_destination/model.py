@@ -21,27 +21,6 @@ class CrateDBKnowledge:
         "_fivetran_deleted": "__fivetran_deleted",
     }
 
-    # Map Fivetran types to CrateDB types.
-    default_type = sa.Text()
-    type_map = {
-        DataType.UNSPECIFIED: sa.Text(),
-        DataType.BOOLEAN: sa.Boolean(),
-        DataType.SHORT: sa.Integer(),
-        DataType.INT: sa.Integer(),
-        DataType.LONG: sa.BigInteger(),
-        DataType.FLOAT: sa.Float(),
-        DataType.DOUBLE: sa.Float(),
-        DataType.NAIVE_DATE: sa.Date(),
-        DataType.NAIVE_DATETIME: sa.DateTime(),
-        DataType.UTC_DATETIME: sa.DateTime(),
-        DataType.DECIMAL: sa.DECIMAL(),
-        DataType.BINARY: sa.Text(),
-        DataType.STRING: sa.String(),
-        DataType.JSON: ObjectType,
-        DataType.XML: sa.String(),
-        DataType.NAIVE_TIME: sa.DateTime(),
-    }
-
     @classmethod
     def rename_keys(cls, record):
         """
@@ -57,9 +36,59 @@ class CrateDBKnowledge:
     def resolve_field(cls, fivetran_field):
         return cls.field_map.get(fivetran_field, fivetran_field)
 
+
+class TypeMap:
+    """
+    Map Fivetran types to CrateDB types and back.
+    """
+
+    cratedb_default = sa.Text()
+    fivetran_default = DataType.UNSPECIFIED
+
+    fivetran_map = {
+        DataType.UNSPECIFIED: sa.Text(),
+        DataType.BOOLEAN: sa.Boolean(),
+        DataType.SHORT: sa.Integer(),
+        DataType.INT: sa.Integer(),
+        DataType.LONG: sa.BigInteger(),
+        DataType.FLOAT: sa.Float(),
+        DataType.DOUBLE: sa.Double(),
+        DataType.NAIVE_DATE: sa.Date(),
+        DataType.NAIVE_DATETIME: sa.DateTime(),
+        DataType.UTC_DATETIME: sa.DateTime(),
+        DataType.DECIMAL: sa.DECIMAL(),
+        DataType.BINARY: sa.Text(),
+        DataType.STRING: sa.String(),
+        DataType.JSON: ObjectType,
+        DataType.XML: sa.String(),
+        DataType.NAIVE_TIME: sa.DateTime(),
+    }
+
+    cratedb_map = {
+        sa.String: DataType.STRING,
+        sa.Text: DataType.STRING,
+        sa.Boolean: DataType.BOOLEAN,
+        sa.Integer: DataType.INT,
+        sa.BigInteger: DataType.LONG,
+        sa.Float: DataType.FLOAT,
+        sa.Double: DataType.DOUBLE,
+        sa.Date: DataType.NAIVE_DATE,
+        # FIXME: Which one to choose?
+        #        Need better inspection about aware/unaware datetime objects?
+        sa.DateTime: DataType.NAIVE_DATETIME,
+        # sa.DateTime: DataType.UTC_DATETIME,
+        sa.DECIMAL: DataType.DECIMAL,
+        sa.BINARY: DataType.BINARY,
+        ObjectType: DataType.JSON,
+    }
+
     @classmethod
-    def resolve_type(cls, fivetran_type):
-        return cls.type_map.get(fivetran_type, cls.default_type)
+    def fivetran_to_cratedb(cls, fivetran_type):
+        return cls.fivetran_map.get(fivetran_type, cls.cratedb_default)
+
+    @classmethod
+    def cratedb_to_fivetran(cls, cratedb_type):
+        return cls.cratedb_map.get(type(cratedb_type), cls.fivetran_default)
 
 
 class FivetranKnowledge:

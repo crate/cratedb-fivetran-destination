@@ -8,9 +8,19 @@ import grpc
 import sqlalchemy as sa
 
 from cratedb_fivetran_destination.engine import Processor
-from cratedb_fivetran_destination.model import CrateDBKnowledge, FivetranKnowledge, TableInfo
+from cratedb_fivetran_destination.model import (
+    CrateDBKnowledge,
+    FivetranKnowledge,
+    TableInfo,
+    TypeMap,
+)
 from cratedb_fivetran_destination.sdk_pb2.common_pb2 import Column
-from cratedb_fivetran_destination.util import LOG_INFO, log_message, setup_logging
+from cratedb_fivetran_destination.util import (
+    LOG_INFO,
+    LOG_WARNING,
+    log_message,
+    setup_logging,
+)
 
 from . import read_csv
 from .sdk_pb2 import common_pb2, destination_sdk_pb2, destination_sdk_pb2_grpc
@@ -225,7 +235,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         for fivetran_column in request.table.columns:
             db_column: sa.Column = sa.Column()
             db_column.name = CrateDBKnowledge.resolve_field(fivetran_column.name)
-            db_column.type = CrateDBKnowledge.resolve_type(fivetran_column.type)
+            db_column.type = TypeMap.fivetran_to_cratedb(fivetran_column.type)
             db_column.primary_key = fivetran_column.primary_key
             if db_column.primary_key:
                 db_column.nullable = False
@@ -299,17 +309,26 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
     def DescribeTable(self, request, context):
         """
         Reflect table schema using SQLAlchemy.
-
-        FIXME: Not implemented yet.
         """
         self._configure_database(request.configuration.get("url"))
-        column1 = common_pb2.Column(
-            name="a1", type=common_pb2.DataType.UNSPECIFIED, primary_key=True
-        )
-        column2 = common_pb2.Column(name="a2", type=common_pb2.DataType.DOUBLE)
-        table: common_pb2.Table = common_pb2.Table(
-            name=request.table_name, columns=[column1, column2]
-        )
+        table_name = request.table_name
+        table: common_pb2.Table = common_pb2.Table(name=table_name)
+        try:
+            sa_table = self._reflect_table(schema=request.schema_name, table=table_name)
+        except sa.exc.NoSuchTableError:
+            msg = f"Table not found: {table_name}"
+            log_message(LOG_WARNING, f"DescribeTable: {msg}")
+            return destination_sdk_pb2.DescribeTableResponse(
+                not_found=True, table=table, warning=common_pb2.Warning(message=msg)
+            )
+        sa_column: sa.Column
+        for sa_column in sa_table.columns:
+            ft_column = common_pb2.Column(
+                name=sa_column.name,
+                type=TypeMap.cratedb_to_fivetran(sa_column.type),
+                primary_key=sa_column.primary_key,
+            )
+            table.columns.append(ft_column)
         log_message(LOG_INFO, f"Completed fetching table info: {table}")
         return destination_sdk_pb2.DescribeTableResponse(not_found=False, table=table)
 
