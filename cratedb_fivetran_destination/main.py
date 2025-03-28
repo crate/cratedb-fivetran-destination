@@ -278,9 +278,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             + str(request.soft)
         )
         with self.engine.connect() as connection:
-            connection.execute(
-                sa.text(f'DELETE FROM "{request.schema_name}"."{request.table_name}"')
-            )
+            connection.execute(sa.text(f"DELETE FROM {self.table_fullname(request)}"))
         return destination_sdk_pb2.TruncateResponse(success=True)
 
     def WriteBatch(self, request, context):
@@ -310,7 +308,6 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         FIXME: Not implemented yet.
         """
         self._configure_database(request.configuration.get("url"))
-
         column1 = common_pb2.Column(
             name="a1", type=common_pb2.DataType.UNSPECIFIED, primary_key=True
         )
@@ -340,22 +337,36 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
                 FivetranKnowledge.replace_values(record)
                 yield record
 
+    def _reflect_table(self, schema: str, table: str):
+        """
+        Acquire table schema from database.
+        """
+        return sa.Table(
+            table,
+            self.metadata,
+            schema=schema,
+            quote_schema=True,
+            autoload_with=self.engine,
+        )
+
     def _table_info_from_request(self, request) -> TableInfo:
         """
         Compute TableInfo data.
         """
-        table = sa.Table(
-            request.table.name,
-            self.metadata,
-            schema=request.schema_name,
-            quote_schema=True,
-            autoload_with=self.engine,
-        )
+        table = self._reflect_table(schema=request.schema_name, table=request.table.name)
         primary_keys = [column.name for column in table.primary_key.columns]
+        return TableInfo(fullname=self.table_fullname(request), primary_keys=primary_keys)
 
-        return TableInfo(
-            fullname=f'"{request.schema_name}"."{request.table.name}"', primary_keys=primary_keys
-        )
+    @staticmethod
+    def table_fullname(request):
+        """
+        Return full-qualified table name from request object.
+        """
+        if hasattr(request, "table"):
+            table_name = request.table.name
+        else:
+            table_name = request.table_name
+        return f'"{request.schema_name}"."{table_name}"'
 
 
 def log_message(level, message):
