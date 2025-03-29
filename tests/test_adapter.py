@@ -7,46 +7,41 @@ from cratedb_fivetran_destination import __version__
 from cratedb_fivetran_destination.engine import Processor
 from cratedb_fivetran_destination.model import TableInfo
 from cratedb_fivetran_destination.sdk_pb2 import common_pb2
-from cratedb_fivetran_destination.util import setup_logging
-
-
-def test_dummy():
-    assert 42 == 42
+from cratedb_fivetran_destination.util import format_log_message, setup_logging
 
 
 def test_version():
     assert __version__ >= "0.0.0"
 
 
-def test_destination(capsys):
+def test_setup_logging():
+    setup_logging(verbose=True)
+
+
+def test_api_test(capsys):
+    """
+    Invoke gRPC API method `Test`.
+    """
     from cratedb_fivetran_destination.main import CrateDBDestinationImpl
 
     destination = CrateDBDestinationImpl()
 
-    # Invoke test function.
-    config = {}
-    config["url"] = "crate://"
+    # Invoke gRPC API method.
+    config = {"url": "crate://"}
     response = destination.Test(
         request=common_pb2.TestRequest(name="foo", configuration=config),
         context=common_pb2.TestResponse(),
     )
     assert response.success is True
+    assert response.failure == ""
 
-    # Check stdout.
+    # Check log output.
     out, err = capsys.readouterr()
-    assert (
-        out == '{"level":"INFO", "message": "Test database connection: foo", '
-        '"message-origin": "sdk_destination"}\n'
-    )
+    assert out == format_log_message("Test database connection: foo", newline=True)
 
 
-def test_setup_logging():
-    setup_logging(verbose=True)
-
-
-def test_processor_failing():
+def test_processor_failing(engine):
     table_info = TableInfo(fullname="foo.bar", primary_keys=["id"])
-    engine = sa.create_engine("crate://localhost:4200/")
     p = Processor(engine=engine)
     with pytest.raises(sa.exc.ProgrammingError) as ex:
         p.process(

@@ -1,3 +1,4 @@
+import json
 import logging
 import sys
 
@@ -7,7 +8,15 @@ LOG_SEVERE = "SEVERE"
 
 
 def log_message(level, message):
-    print(f'{{"level":"{level}", "message": "{message}", "message-origin": "sdk_destination"}}')  # noqa: T201
+    print(format_log_message(message=message, level=level))  # noqa: T201
+
+
+def format_log_message(message: str, level="INFO", newline=False):
+    suffix = newline and "\n" or ""
+    return (
+        json.dumps({"level": level, "message": message, "message-origin": "sdk_destination"})
+        + suffix
+    )
 
 
 def setup_logging(level=logging.INFO, verbose: bool = False):
