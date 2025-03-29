@@ -90,8 +90,8 @@ class TypeMap:
         sa.Date: DataType.NAIVE_DATE,
         # FIXME: Which one to choose?
         #        Need better inspection about aware/unaware datetime objects?
-        sa.DateTime: DataType.NAIVE_DATETIME,
-        # sa.DateTime: DataType.UTC_DATETIME,
+        # sa.DateTime: DataType.NAIVE_DATETIME,
+        sa.DateTime: DataType.UTC_DATETIME,
         sa.DECIMAL: DataType.DECIMAL,
         sa.BINARY: DataType.BINARY,
         ObjectType: DataType.JSON,
