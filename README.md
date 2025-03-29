@@ -57,19 +57,6 @@ Start gRPC destination server.
 python -m cratedb_fivetran_destination.main
 ```
 
-## Status
-
-The adapter is still in its infancy and needs exposure to remedy teething
-problems.
-
-On its next iterations, we will evaluate if the encoding (column mapping) style
-needs to be adjusted, and if the type mapping needs improvements.
-We will also take care about a few more other details around easing deployment.
-
-Also, the adapter still lacks the implementation for the `AlterTable`
-method, which will be submitted on a subsequent iteration.
-Contributions are welcome.
-
 ## Project Information
 
 ### Acknowledgements
@@ -79,6 +66,17 @@ inheriting from and building upon.
 ### Contributing
 The `cratedb-fivetran-destination` package is an open source project, and is
 [managed on GitHub]. We appreciate contributions of any kind.
+
+### Status
+
+The adapter is still in its infancy and needs exposure to remedy teething
+problems.
+
+On its next iterations, we will evaluate if the encoding (column mapping) style
+needs to be adjusted, and if the type mapping needs improvements.
+Also, a few more other details around recommendations from the [Fivetran SDK
+Development Guide] will be improved.
+
 
 ### License
 The project uses the Apache license, like CrateDB itself.
@@ -92,6 +90,7 @@ The project uses the Apache license, like CrateDB itself.
 [CrateDB's SQLAlchemy dialect]: https://cratedb.com/docs/sqlalchemy-cratedb/
 [CrateDBVectorStore]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/docs/vectorstores.ipynb
 [crate]: https://pypi.org/project/crate/
+[Fivetran SDK Development Guide]: https://github.com/fivetran/fivetran_sdk/blob/main/development-guide.md
 
 [Changelog]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/CHANGES.md
 [Community Forum]: https://community.cratedb.com/

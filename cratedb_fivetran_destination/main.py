@@ -7,16 +7,18 @@ from concurrent import futures
 import grpc
 import sqlalchemy as sa
 
-from cratedb_fivetran_destination.engine import Processor
+from cratedb_fivetran_destination.engine import AlterTableInplaceStatements, Processor
 from cratedb_fivetran_destination.model import (
-    CrateDBKnowledge,
+    FieldMap,
     FivetranKnowledge,
+    FivetranTable,
     TableInfo,
     TypeMap,
 )
 from cratedb_fivetran_destination.sdk_pb2.common_pb2 import Column
 from cratedb_fivetran_destination.util import (
     LOG_INFO,
+    LOG_SEVERE,
     LOG_WARNING,
     log_message,
     setup_logging,
@@ -234,7 +236,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         fivetran_column: Column
         for fivetran_column in request.table.columns:
             db_column: sa.Column = sa.Column()
-            db_column.name = CrateDBKnowledge.resolve_field(fivetran_column.name)
+            db_column.name = FieldMap.to_cratedb(fivetran_column.name)
             db_column.type = TypeMap.fivetran_to_cratedb(fivetran_column.type)
             db_column.primary_key = fivetran_column.primary_key
             if db_column.primary_key:
@@ -254,8 +256,6 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
     def AlterTable(self, request, context):
         """
         Alter schema of database table.
-
-        FIXME: Not implemented yet.
         """
         self._configure_database(request.configuration.get("url"))
         res: destination_sdk_pb2.AlterTableResponse  # noqa: F842
@@ -267,6 +267,74 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             + " | "
             + str(request.table.columns)
         )
+
+        # Compute schema diff.
+        old_table = self.DescribeTable(request, context).table
+        new_table = request.table
+
+        pk_has_changed = False
+        if not FivetranTable.pk_equals(old_table, new_table):
+            pk_has_changed = True
+
+        columns_old: t.Dict[str, common_pb2.Column] = {
+            column.name: column for column in old_table.columns
+        }
+
+        columns_new: t.List[common_pb2.Column] = []
+        columns_changed: t.List[common_pb2.Column] = []
+        columns_common: t.List[common_pb2.Column] = []
+
+        for column in new_table.columns:
+            column_old = columns_old.get(column.name)
+            if column_old is None:
+                columns_new.append(column)
+            else:
+                columns_common.append(column)
+                type_old = TypeMap.fivetran_to_cratedb(column_old.type, column_old.params)
+                type_new = TypeMap.fivetran_to_cratedb(column.type, column.params)
+                if type_old != type_new:
+                    if column_old.primary_key:
+                        pk_has_changed = True
+                        continue
+
+                    columns_changed.append(column)
+
+        table_info = self._table_info_from_request(request)
+        if pk_has_changed:
+            log_message(
+                LOG_WARNING,
+                "Alter table intends to change the primary key of the table. "
+                "Because CrateDB does not support this operation, the table will be recreated.",
+            )
+            # FIXME: Implement non-inplace ALTER TABLE for primary key updates.
+            """
+            ats = AlterTableRecreateStatements(
+                table=table_info, table_new=new_table, columns_common=columns_common
+            )
+            """
+            msg = (
+                "Alter table intends to change the primary key of the table, "
+                "but this operation is not implemented yet"
+            )
+            log_message(LOG_SEVERE, f"AlterTable: {msg}")
+            return destination_sdk_pb2.AlterTableResponse(
+                success=False,
+                warning=common_pb2.Warning(message=msg),
+            )
+        ats = AlterTableInplaceStatements(
+            table=table_info, columns_new=columns_new, columns_changed=columns_changed
+        )
+        with self.engine.connect() as connection:
+            stmts = ats.to_sql()
+            if stmts:
+                for stmt in stmts:
+                    connection.execute(sa.text(stmt))
+                log_message(
+                    LOG_INFO, f"AlterTable: Successfully altered table: {table_info.fullname}"
+                )
+            else:
+                log_message(LOG_INFO, "AlterTable: Nothing changed")
+
         return destination_sdk_pb2.AlterTableResponse(success=True)
 
     def Truncate(self, request, context):
@@ -311,7 +379,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         Reflect table schema using SQLAlchemy.
         """
         self._configure_database(request.configuration.get("url"))
-        table_name = request.table_name
+        table_name = self.table_name(request)
         table: common_pb2.Table = common_pb2.Table(name=table_name)
         try:
             sa_table = self._reflect_table(schema=request.schema_name, table=table_name)
@@ -324,7 +392,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         sa_column: sa.Column
         for sa_column in sa_table.columns:
             ft_column = common_pb2.Column(
-                name=sa_column.name,
+                name=FieldMap.to_fivetran(sa_column.name),
                 type=TypeMap.cratedb_to_fivetran(sa_column.type),
                 primary_key=sa_column.primary_key,
             )
@@ -347,7 +415,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             logger.info(f"Decrypting file: {filename}")
             for record in read_csv.decrypt_file(filename, value):
                 # Rename keys according to field map.
-                record = CrateDBKnowledge.rename_keys(record)
+                record = FieldMap.rename_keys(record)
                 FivetranKnowledge.replace_values(record)
                 yield record
 
@@ -372,14 +440,19 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         return TableInfo(fullname=self.table_fullname(request), primary_keys=primary_keys)
 
     @staticmethod
-    def table_fullname(request):
+    def table_name(request):
+        """
+        Return table name from request object.
+        """
+        if hasattr(request, "table"):
+            return request.table.name
+        return request.table_name
+
+    def table_fullname(self, request):
         """
         Return full-qualified table name from request object.
         """
-        if hasattr(request, "table"):
-            table_name = request.table.name
-        else:
-            table_name = request.table_name
+        table_name = self.table_name(request)
         return f'"{request.schema_name}"."{table_name}"'
 
 

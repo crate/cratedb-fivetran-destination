@@ -1,5 +1,10 @@
 # Development Documentation
 
+## Introduction
+
+For hacking on the destination connector, please familiarize yourself
+with the [Fivetran SDK Development Guide].
+
 ## Set up sandbox
 ```shell
 git clone https://github.com/crate/cratedb-fivetran-destination.git
@@ -71,4 +76,5 @@ poe release
 
 
 [Fivetran destination tester]: https://github.com/fivetran/fivetran_sdk/tree/v2/tools/destination-connector-tester
+[Fivetran SDK Development Guide]: https://github.com/fivetran/fivetran_sdk/blob/main/development-guide.md
 [Install the gcloud CLI]: https://cloud.google.com/sdk/docs/install

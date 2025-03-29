@@ -32,6 +32,8 @@ def test_api_test(capsys):
         request=common_pb2.TestRequest(name="foo", configuration=config),
         context=common_pb2.TestResponse(),
     )
+
+    # Validate outcome.
     assert response.success is True
     assert response.failure == ""
 
@@ -139,8 +141,166 @@ def test_api_describe_table_not_found(capsys):
     )
 
 
+def test_api_alter_table_add_column(engine, capsys):
+    """
+    Invoke gRPC API method `AlterTable`, adding a new column.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    destination = CrateDBDestinationImpl()
+
+    with engine.connect() as conn:
+        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
+        conn.execute(sa.text("CREATE TABLE testdrive.foo (id INT)"))
+
+    # Invoke gRPC API method under test.
+    table: common_pb2.Table = common_pb2.Table(name="foo")
+    column: common_pb2.Column = common_pb2.Column(
+        name="bar",
+        type=common_pb2.DataType.STRING,
+        primary_key=False,
+    )
+    table.columns.append(column)
+    config = {"url": "crate://"}
+    response = destination.AlterTable(
+        request=destination_sdk_pb2.AlterTableRequest(
+            table=table, schema_name="testdrive", configuration=config
+        ),
+        context=destination_sdk_pb2.AlterTableResponse(),
+    )
+
+    # Validate outcome.
+    assert response.success is True
+    assert response.warning.message == ""
+
+    # Check log output.
+    out, err = capsys.readouterr()
+    assert (
+        format_log_message(
+            'AlterTable: Successfully altered table: "testdrive"."foo"', newline=True
+        )
+        in out
+    )
+
+
+def test_api_alter_table_nothing_changed(engine, capsys):
+    """
+    Invoke gRPC API method `AlterTable`, but nothing changed.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    destination = CrateDBDestinationImpl()
+
+    with engine.connect() as conn:
+        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
+        conn.execute(sa.text("CREATE TABLE testdrive.foo (id INT)"))
+
+    # Invoke gRPC API method under test.
+    table: common_pb2.Table = common_pb2.Table(
+        name="foo",
+        columns=[
+            common_pb2.Column(
+                name="id",
+                type=common_pb2.DataType.INT,
+                primary_key=False,
+            )
+        ],
+    )
+    config = {"url": "crate://"}
+    response = destination.AlterTable(
+        request=destination_sdk_pb2.AlterTableRequest(
+            table=table, schema_name="testdrive", configuration=config
+        ),
+        context=destination_sdk_pb2.AlterTableResponse(),
+    )
+
+    # Validate outcome.
+    assert response.success is True
+    assert response.warning.message == ""
+
+    # Check log output.
+    out, err = capsys.readouterr()
+    assert format_log_message("AlterTable: Nothing changed", newline=True) in out
+
+
+def test_api_alter_table_change_primary_key_type(engine, capsys):
+    """
+    Invoke gRPC API method `AlterTable`, changing the type of the primary key.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    destination = CrateDBDestinationImpl()
+
+    with engine.connect() as conn:
+        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
+        conn.execute(sa.text("CREATE TABLE testdrive.foo (id INT PRIMARY KEY)"))
+
+    # Invoke gRPC API method under test.
+    table: common_pb2.Table = common_pb2.Table(name="foo")
+    column: common_pb2.Column = common_pb2.Column(
+        name="id",
+        type=common_pb2.DataType.STRING,
+        primary_key=True,
+    )
+    table.columns.append(column)
+    config = {"url": "crate://"}
+    response = destination.AlterTable(
+        request=destination_sdk_pb2.AlterTableRequest(
+            table=table, schema_name="testdrive", configuration=config
+        ),
+        context=destination_sdk_pb2.AlterTableResponse(),
+    )
+
+    # Validate outcome.
+    assert response.success is False
+    assert "this operation is not implemented yet" in response.warning.message
+
+    # Check log output.
+    out, err = capsys.readouterr()
+    # assert out == format_log_message("AlterTable: Successfully altered table: ", newline=True)  # noqa: E501, ERA001
+    assert "this operation is not implemented yet" in out
+
+
+def test_api_alter_table_change_primary_key_name(engine, capsys):
+    """
+    Invoke gRPC API method `AlterTable`, changing the name of the primary key.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    destination = CrateDBDestinationImpl()
+
+    with engine.connect() as conn:
+        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
+        conn.execute(sa.text("CREATE TABLE testdrive.foo (id INT PRIMARY KEY)"))
+
+    # Invoke gRPC API method under test.
+    table: common_pb2.Table = common_pb2.Table(name="foo")
+    column: common_pb2.Column = common_pb2.Column(
+        name="identfier",
+        type=common_pb2.DataType.INT,
+        primary_key=True,
+    )
+    table.columns.append(column)
+    config = {"url": "crate://"}
+    response = destination.AlterTable(
+        request=destination_sdk_pb2.AlterTableRequest(
+            table=table, schema_name="testdrive", configuration=config
+        ),
+        context=destination_sdk_pb2.AlterTableResponse(),
+    )
+
+    # Validate outcome.
+    assert response.success is False
+    assert "this operation is not implemented yet" in response.warning.message
+
+    # Check log output.
+    out, err = capsys.readouterr()
+    # assert out == format_log_message("AlterTable: Successfully altered table: ", newline=True)  # noqa: E501, ERA001
+    assert "this operation is not implemented yet" in out
+
+
 def test_processor_failing(engine):
-    table_info = TableInfo(fullname="foo.bar", primary_keys=["id"])
+    table_info = TableInfo(fullname="unknown.unknown", primary_keys=["id"])
     p = Processor(engine=engine)
     with pytest.raises(sa.exc.ProgrammingError) as ex:
         p.process(
@@ -149,4 +309,4 @@ def test_processor_failing(engine):
             update_records=[{"id": 2}],
             delete_records=[{"id": 2}],
         )
-    assert ex.match(re.escape("SchemaUnknownException[Schema 'foo' unknown]"))
+    assert ex.match(re.escape("SchemaUnknownException[Schema 'unknown' unknown]"))
