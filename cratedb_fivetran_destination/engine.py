@@ -6,7 +6,8 @@ from attr import Factory
 from attrs import define
 from toolz import dissoc
 
-from cratedb_fivetran_destination.model import SqlBag, TableInfo
+from cratedb_fivetran_destination.model import FieldMap, SqlBag, TableInfo, TypeMap
+from cratedb_fivetran_destination.sdk_pb2 import common_pb2
 
 logger = logging.getLogger()
 
@@ -90,6 +91,55 @@ class DeleteStatement:
         DELETE FROM {self.table.fullname}
         WHERE {" AND ".join([f'"{key}" = :{key}' for key in self.table.primary_keys])}
         """)  # noqa: S608
+
+
+@define
+class AlterTableInplaceStatements:
+    """
+    Manage and render a procedure of SQL statements for altering/migrating a table schema.
+    """
+
+    table: TableInfo
+    columns_new: t.List[common_pb2.Column] = Factory(list)
+    columns_changed: t.List[common_pb2.Column] = Factory(list)
+
+    def to_sql(self) -> SqlBag:
+        sqlbag = SqlBag()
+
+        if not self.columns_new and not self.columns_changed:
+            return sqlbag
+
+        # Translate "columns changed" instructions into migration operation
+        # based on altering and copying using `UPDATE ... SET ...`.
+        for column in self.columns_changed:
+            column_name = FieldMap.to_cratedb(column.name)
+            column_name_temporary = column_name + "_alter_tmp"
+            type_ = TypeMap.fivetran_to_cratedb(column.type, column.params)
+            sqlbag.add(
+                f"ALTER TABLE {self.table.fullname} ADD COLUMN {column_name_temporary} {type_}; "
+            )
+            sqlbag.add(
+                f"UPDATE {self.table.fullname} SET {column_name_temporary} = {column_name}::{type_}; "  # noqa: S608, E501
+            )
+            sqlbag.add(f"ALTER TABLE {self.table.fullname} DROP {column_name}; ")
+            sqlbag.add(
+                f"ALTER TABLE {self.table.fullname} RENAME {column_name_temporary} TO {column_name}; "  # noqa: E501
+            )
+
+        # Translate "new column" instructions into `ALTER TABLE ... ADD ...` clauses.
+        if self.columns_new:
+            alter_add_ops: t.List[str] = []
+            for column in self.columns_new:
+                alter_add_ops.append(f"ADD {self.column_definition(column)}")
+            sqlbag.add(f"ALTER TABLE {self.table.fullname} {', '.join(alter_add_ops)}; ")
+
+        return sqlbag
+
+    @staticmethod
+    def column_definition(column):
+        field = FieldMap.to_cratedb(column.name)
+        type_ = TypeMap.fivetran_to_cratedb(column.type, column.params)
+        return f"{field} {type_}"
 
 
 @define
