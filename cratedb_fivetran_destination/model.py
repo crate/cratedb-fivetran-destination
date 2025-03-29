@@ -1,4 +1,5 @@
 import typing as t
+from textwrap import dedent
 
 import sqlalchemy as sa
 from attr import Factory
@@ -117,3 +118,20 @@ class FivetranKnowledge:
 class TableInfo:
     fullname: str
     primary_keys: t.List[str] = Factory(list)
+
+
+@define
+class SqlBag:
+    """
+    A little bag of multiple SQL statements.
+    """
+
+    statements: t.List[str] = Factory(list)
+
+    def add(self, sql: str):
+        self.statements.append(dedent(sql).strip())
+        return self
+
+    def execute(self, connection: sa.Connection):
+        for sql in self.statements:
+            connection.execute(sa.text(sql))
