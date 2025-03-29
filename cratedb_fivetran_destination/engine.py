@@ -116,14 +116,14 @@ class AlterTableInplaceStatements:
             column_name_temporary = column_name + "_alter_tmp"
             type_ = TypeMap.fivetran_to_cratedb(column.type, column.params)
             sqlbag.add(
-                f"ALTER TABLE {self.table.fullname} ADD COLUMN {column_name_temporary} {type_}; "
+                f"ALTER TABLE {self.table.fullname} ADD COLUMN {column_name_temporary} {type_};"
             )
             sqlbag.add(
-                f"UPDATE {self.table.fullname} SET {column_name_temporary} = {column_name}::{type_}; "  # noqa: S608, E501
+                f"UPDATE {self.table.fullname} SET {column_name_temporary} = {column_name}::{type_};"  # noqa: S608, E501
             )
-            sqlbag.add(f"ALTER TABLE {self.table.fullname} DROP {column_name}; ")
+            sqlbag.add(f"ALTER TABLE {self.table.fullname} DROP {column_name};")
             sqlbag.add(
-                f"ALTER TABLE {self.table.fullname} RENAME {column_name_temporary} TO {column_name}; "  # noqa: E501
+                f"ALTER TABLE {self.table.fullname} RENAME {column_name_temporary} TO {column_name};"  # noqa: E501
             )
 
         # Translate "new column" instructions into `ALTER TABLE ... ADD ...` clauses.
@@ -131,7 +131,7 @@ class AlterTableInplaceStatements:
             alter_add_ops: t.List[str] = []
             for column in self.columns_new:
                 alter_add_ops.append(f"ADD {self.column_definition(column)}")
-            sqlbag.add(f"ALTER TABLE {self.table.fullname} {', '.join(alter_add_ops)}; ")
+            sqlbag.add(f"ALTER TABLE {self.table.fullname} {', '.join(alter_add_ops)};")
 
         return sqlbag
 
