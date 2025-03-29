@@ -138,7 +138,7 @@ def test_integration_cratedb(capfd, services, engine):
         metadata,
         sa.Column("unspecified", sa.String),
         sa.Column("bool", sa.Boolean),
-        sa.Column("short", sa.Integer),
+        sa.Column("short", sa.SmallInteger),
         sa.Column("int", sa.Integer),
         sa.Column("long", sa.BigInteger),
         sa.Column("float", sa.Float),

@@ -61,7 +61,7 @@ class TypeMap:
     fivetran_map = {
         DataType.UNSPECIFIED: sa.Text(),
         DataType.BOOLEAN: sa.Boolean(),
-        DataType.SHORT: sa.Integer(),
+        DataType.SHORT: sa.SmallInteger(),
         DataType.INT: sa.Integer(),
         DataType.LONG: sa.BigInteger(),
         DataType.FLOAT: sa.Float(),
@@ -81,6 +81,7 @@ class TypeMap:
         sa.String: DataType.STRING,
         sa.Text: DataType.STRING,
         sa.Boolean: DataType.BOOLEAN,
+        sa.SmallInteger: DataType.SHORT,
         sa.Integer: DataType.INT,
         sa.BigInteger: DataType.LONG,
         sa.Float: DataType.FLOAT,
