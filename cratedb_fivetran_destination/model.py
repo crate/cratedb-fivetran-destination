@@ -7,10 +7,11 @@ from attrs import define
 from sqlalchemy_cratedb import ObjectType
 from tikray.util.dictx import OrderedDictX
 
+from cratedb_fivetran_destination.sdk_pb2 import common_pb2
 from cratedb_fivetran_destination.sdk_pb2.common_pb2 import DataType
 
 
-class CrateDBKnowledge:
+class FieldMap:
     """
     Manage special knowledge about CrateDB.
     """
@@ -34,8 +35,20 @@ class CrateDBKnowledge:
         return record
 
     @classmethod
-    def resolve_field(cls, fivetran_field):
+    def to_cratedb(cls, fivetran_field):
+        """
+        Convert a Fivetran field name into a CrateDB field name.
+        """
         return cls.field_map.get(fivetran_field, fivetran_field)
+
+    @classmethod
+    def to_fivetran(cls, cratedb_field):
+        """
+        Convert a CrateDB field name into a Fivetran field name.
+        """
+        # TODO: Compute reverse map only once.
+        reverse_map = dict(zip(cls.field_map.values(), cls.field_map.keys()))
+        return reverse_map.get(cratedb_field, cratedb_field)
 
 
 class TypeMap:
@@ -55,14 +68,14 @@ class TypeMap:
         DataType.FLOAT: sa.Float(),
         DataType.DOUBLE: sa.Double(),
         DataType.NAIVE_DATE: sa.Date(),
-        DataType.NAIVE_DATETIME: sa.DateTime(),
-        DataType.UTC_DATETIME: sa.DateTime(),
+        DataType.NAIVE_DATETIME: sa.TIMESTAMP(),
+        DataType.UTC_DATETIME: sa.TIMESTAMP(),
         DataType.DECIMAL: sa.DECIMAL(),
         DataType.BINARY: sa.Text(),
         DataType.STRING: sa.String(),
         DataType.JSON: ObjectType,
         DataType.XML: sa.String(),
-        DataType.NAIVE_TIME: sa.DateTime(),
+        DataType.NAIVE_TIME: sa.TIMESTAMP(),
     }
 
     cratedb_map = {
@@ -84,7 +97,8 @@ class TypeMap:
     }
 
     @classmethod
-    def fivetran_to_cratedb(cls, fivetran_type):
+    def fivetran_to_cratedb(cls, fivetran_type, fivetran_params=None):
+        # TODO: Introduce parameter handling to type mappers.
         return cls.fivetran_map.get(fivetran_type, cls.cratedb_default)
 
     @classmethod
@@ -128,6 +142,9 @@ class SqlBag:
 
     statements: t.List[str] = Factory(list)
 
+    def __bool__(self):
+        return bool(self.statements)
+
     def add(self, sql: str):
         self.statements.append(dedent(sql).strip())
         return self
@@ -135,3 +152,17 @@ class SqlBag:
     def execute(self, connection: sa.Connection):
         for sql in self.statements:
             connection.execute(sa.text(sql))
+
+
+class FivetranTable:
+    """Provide helper methods for Fivetran tables."""
+
+    @classmethod
+    def pk_column_names(cls, table: common_pb2.Table) -> t.List[str]:
+        """Return list of primary keys column names."""
+        return [column.name for column in table.columns if column.primary_key]
+
+    @classmethod
+    def pk_equals(cls, t1: common_pb2.Table, t2: common_pb2.Table) -> bool:
+        """Return whether two tables have the same primary keys."""
+        return cls.pk_column_names(t1) == cls.pk_column_names(t2)
