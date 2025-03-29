@@ -4,6 +4,7 @@
 ## Unreleased
 - Added implementation for `DescribeTable` gRPC method
 - Added implementation for `AlterTable` gRPC method
+- Type mapping: Mapped `Fivetran.SHORT` to `SQLAlchemy.SmallInteger`
 
 ## v0.0.0 - 2025-02-17
 - Added project skeleton
