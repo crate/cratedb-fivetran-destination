@@ -44,9 +44,9 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         # SQLAlchemy database connection URL.
         url = common_pb2.FormField(
             name="url",
-            label="SQLAlchemy URL",
+            label="CrateDB database connection URL in SQLAlchemy format",
             text_field=common_pb2.TextField.PlainText,
-            placeholder="crate://localhost:4200",
+            placeholder="crate://<username>:<password>@example.gke1.us-central1.gcp.cratedb.net:4200?ssl=true",
             default_value="crate://",
         )
 
@@ -192,7 +192,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
         # Add tests to the form
         form_fields.tests.add(name="connect", label="Tests connection")
-
+        # TODO: How to invoke this test?
         form_fields.tests.add(name="select", label="Tests selection")
 
         return form_fields

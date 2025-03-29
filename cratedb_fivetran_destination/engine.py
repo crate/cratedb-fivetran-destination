@@ -131,5 +131,5 @@ class Processor:
             try:
                 connection.execute(sa.text(sql), record)
             except sa.exc.ProgrammingError as ex:
-                logger.exception(f"Processing database operation failed: {ex}")
+                logger.error(f"Processing database operation failed: {ex}")
                 raise
