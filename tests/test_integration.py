@@ -17,11 +17,6 @@ def run(command: str, background: bool = False):
     return None
 
 
-@pytest.fixture
-def engine():
-    return sa.create_engine("crate://")
-
-
 @pytest.fixture(autouse=True)
 def reset_tables(engine):
     with engine.connect() as connection:

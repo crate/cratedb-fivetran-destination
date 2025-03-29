@@ -1,13 +1,12 @@
 import logging
 import typing as t
-from textwrap import dedent
 
 import sqlalchemy as sa
 from attr import Factory
 from attrs import define
 from toolz import dissoc
 
-from cratedb_fivetran_destination.model import TableInfo
+from cratedb_fivetran_destination.model import SqlBag, TableInfo
 
 logger = logging.getLogger()
 
@@ -30,11 +29,11 @@ class UpsertStatement:
         """
         return dissoc(self.record, *self.table.primary_keys)
 
-    def to_sql(self):
+    def to_sql(self) -> SqlBag:
         """
         Render statement to SQL.
         """
-        return dedent(f"""
+        return SqlBag().add(f"""
         INSERT INTO {self.table.fullname}
         ({", ".join([f'"{key}"' for key in self.record.keys()])})
         VALUES ({", ".join([f":{key}" for key in self.record.keys()])})
@@ -61,11 +60,11 @@ class UpdateStatement:
         """
         return dissoc(self.record, *self.table.primary_keys)
 
-    def to_sql(self):
+    def to_sql(self) -> SqlBag:
         """
         Render statement to SQL.
         """
-        return dedent(f"""
+        return SqlBag().add(f"""
         UPDATE {self.table.fullname}
         SET {", ".join([f'"{key}" = :{key}' for key in self.data.keys()])}
         WHERE {" AND ".join([f'"{key}" = :{key}' for key in self.table.primary_keys])}
@@ -83,11 +82,11 @@ class DeleteStatement:
     table: TableInfo
     record: t.Dict[str, t.Any] = Factory(dict)
 
-    def to_sql(self):
+    def to_sql(self) -> SqlBag:
         """
         Render statement to SQL.
         """
-        return dedent(f"""
+        return SqlBag().add(f"""
         DELETE FROM {self.table.fullname}
         WHERE {" AND ".join([f'"{key}" = :{key}' for key in self.table.primary_keys])}
         """)  # noqa: S608
@@ -127,7 +126,8 @@ class Processor:
 
     def process_records(self, connection, records, converter):
         for record in records:
-            sql = converter(record)
+            # DML statements are always singular, because they are accompanied with a `record`.
+            sql = converter(record).statements[0]
             try:
                 connection.execute(sa.text(sql), record)
             except sa.exc.ProgrammingError as ex:
