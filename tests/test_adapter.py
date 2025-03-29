@@ -57,7 +57,7 @@ def test_api_configuration_form(capsys):
     )
 
     # Extract field of concern.
-    url_field: common_pb2.FormField = response.fields[3].conditional_fields.fields[0]
+    url_field: common_pb2.FormField = response.fields[0]
 
     # Validate fields.
     assert url_field.name == "url"

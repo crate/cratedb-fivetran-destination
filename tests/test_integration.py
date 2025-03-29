@@ -112,10 +112,15 @@ def test_integration_fivetran(capfd, services, engine):
 
     # "Truncate" is the last software test invoked by the Fivetran destination tester.
     # If the test case receives corresponding log output, it is considered to be complete.
-    assert "Create Table succeeded" in err
-    assert "Alter Table succeeded" in err
-    assert "WriteBatch succeeded" in err
+    assert "Create Table succeeded: transaction" in err
+    assert "Alter Table succeeded: transaction" in err
+    assert "WriteBatch succeeded: transaction" in err
     assert "Truncate succeeded: transaction" in err
+
+    assert "Create Table succeeded: campaign" in err
+    assert "WriteBatch succeeded: campaign" in err
+    assert "Truncate succeeded: campaign" in err
+    assert "Hard Truncate succeeded: campaign" in err
 
 
 @pytest.mark.parametrize("services", ["./tests/data/cratedb_canonical"], indirect=True)
@@ -138,11 +143,12 @@ def test_integration_cratedb(capfd, services, engine):
         metadata,
         sa.Column("unspecified", sa.String),
         sa.Column("bool", sa.Boolean),
-        sa.Column("short", sa.Integer),
+        sa.Column("short", sa.SmallInteger),
         sa.Column("int", sa.Integer),
         sa.Column("long", sa.BigInteger),
         sa.Column("float", sa.Float),
         sa.Column("double", sa.Float),
+        # FIXME: Investigate why `UserDefinedType` is used here.
         sa.Column("naive_date", UserDefinedType),
         sa.Column("naive_datetime", UserDefinedType),
         sa.Column("utc_datetime", UserDefinedType),
@@ -174,5 +180,5 @@ def test_integration_cratedb(capfd, services, engine):
     out, err = capfd.readouterr()
 
     # If the test case receives corresponding log output, it is considered to be complete.
-    assert "Create Table succeeded" in err
-    assert "WriteBatch succeeded" in err
+    assert "Create Table succeeded: all_types" in err
+    assert "WriteBatch succeeded: all_types" in err

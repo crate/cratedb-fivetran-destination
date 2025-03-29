@@ -12,7 +12,7 @@ from cratedb_fivetran_destination.sdk_pb2.common_pb2 import DataType
 
 class FieldMap:
     """
-    Manage special knowledge about CrateDB.
+    Manage special knowledge about CrateDB field names.
     """
 
     # Map special column names, because CrateDB does not allow `_` prefixes.
@@ -61,7 +61,7 @@ class TypeMap:
     fivetran_map = {
         DataType.UNSPECIFIED: sa.Text(),
         DataType.BOOLEAN: sa.Boolean(),
-        DataType.SHORT: sa.Integer(),
+        DataType.SHORT: sa.SmallInteger(),
         DataType.INT: sa.Integer(),
         DataType.LONG: sa.BigInteger(),
         DataType.FLOAT: sa.Float(),
@@ -81,6 +81,7 @@ class TypeMap:
         sa.String: DataType.STRING,
         sa.Text: DataType.STRING,
         sa.Boolean: DataType.BOOLEAN,
+        sa.SmallInteger: DataType.SHORT,
         sa.Integer: DataType.INT,
         sa.BigInteger: DataType.LONG,
         sa.Float: DataType.FLOAT,
@@ -88,20 +89,27 @@ class TypeMap:
         sa.Date: DataType.NAIVE_DATE,
         # FIXME: Which one to choose?
         #        Need better inspection about aware/unaware datetime objects?
-        sa.DateTime: DataType.NAIVE_DATETIME,
-        # sa.DateTime: DataType.UTC_DATETIME,
+        # sa.DateTime: DataType.NAIVE_DATETIME,
+        sa.DateTime: DataType.UTC_DATETIME,
         sa.DECIMAL: DataType.DECIMAL,
         sa.BINARY: DataType.BINARY,
         ObjectType: DataType.JSON,
+        # FIXME: What about Arrays?
     }
 
     @classmethod
-    def fivetran_to_cratedb(cls, fivetran_type, fivetran_params=None):
+    def to_cratedb(cls, fivetran_type, fivetran_params=None):
+        """
+        Convert a Fivetran type into a CrateDB type.
+        """
         # TODO: Introduce parameter handling to type mappers.
         return cls.fivetran_map.get(fivetran_type, cls.cratedb_default)
 
     @classmethod
-    def cratedb_to_fivetran(cls, cratedb_type):
+    def to_fivetran(cls, cratedb_type):
+        """
+        Convert a CrateDB type into a Fivetran type.
+        """
         return cls.cratedb_map.get(type(cratedb_type), cls.fivetran_default)
 
 
@@ -129,6 +137,10 @@ class FivetranKnowledge:
 
 @define
 class TableInfo:
+    """
+    Manage information about a database table.
+    """
+
     fullname: str
     primary_keys: t.List[str] = Factory(list)
 
