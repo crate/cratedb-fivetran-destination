@@ -39,18 +39,9 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
     def ConfigurationForm(self, request, context):
         log_message(LOG_INFO, "Fetching configuration form")
 
-        # Create the form fields
+        # Create the form fields.
         form_fields = common_pb2.ConfigurationFormResponse(
             schema_selection_supported=True, table_selection_supported=True
-        )
-
-        # writerType field with dropdown
-        writer_type = common_pb2.FormField(
-            name="writerType",
-            label="Writer Type",
-            description="Choose the destination type",
-            dropdown_field=common_pb2.DropdownField(dropdown_field=["Database", "File", "Cloud"]),
-            default_value="Database",
         )
 
         # SQLAlchemy database connection URL.
@@ -62,147 +53,10 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             default_value="crate://",
         )
 
-        # host field
-        host = common_pb2.FormField(
-            name="host",
-            label="Host",
-            text_field=common_pb2.TextField.PlainText,
-            placeholder="your_host_details",
-        )
+        # Add fields to the form.
+        form_fields.fields.append(url)
 
-        # port field
-        port = common_pb2.FormField(
-            name="port",
-            label="Port",
-            text_field=common_pb2.TextField.PlainText,
-            placeholder="your_port_details",
-        )
-
-        # user field
-        user = common_pb2.FormField(
-            name="user",
-            label="User",
-            text_field=common_pb2.TextField.PlainText,
-            placeholder="user_name",
-        )
-
-        # password field
-        password = common_pb2.FormField(
-            name="password",
-            label="Password",
-            text_field=common_pb2.TextField.Password,
-            placeholder="your_password",
-        )
-
-        # database field
-        database = common_pb2.FormField(
-            name="database",
-            label="Database",
-            text_field=common_pb2.TextField.PlainText,
-            placeholder="your_database_name",
-        )
-
-        # table field
-        table = common_pb2.FormField(
-            name="table",
-            label="Table",
-            text_field=common_pb2.TextField.PlainText,
-            placeholder="your_table_name",
-        )
-
-        # filePath field
-        file_path = common_pb2.FormField(
-            name="filePath",
-            label="File Path",
-            text_field=common_pb2.TextField.PlainText,
-            placeholder="your_file_path",
-        )
-
-        # region field with dropdown
-        region = common_pb2.FormField(
-            name="region",
-            label="Cloud Region",
-            description="Choose the cloud region",
-            dropdown_field=common_pb2.DropdownField(
-                dropdown_field=["Azure", "AWS", "Google Cloud"]
-            ),
-            default_value="Azure",
-        )
-
-        # enableEncryption toggle field
-        enable_encryption = common_pb2.FormField(
-            name="enableEncryption",
-            label="Enable Encryption?",
-            description="To enable/disable encryption for data transfer",
-            toggle_field=common_pb2.ToggleField(),
-        )
-
-        # Define Visibility Conditions for Conditional Fields
-        visibility_condition_for_cloud = common_pb2.VisibilityCondition(
-            condition_field="writerType", string_value="Cloud"
-        )
-
-        visibility_condition_for_database = common_pb2.VisibilityCondition(
-            condition_field="writerType", string_value="Database"
-        )
-
-        visibility_condition_for_file = common_pb2.VisibilityCondition(
-            condition_field="writerType", string_value="File"
-        )
-
-        # List of conditional fields
-        # Note: The 'name' and 'label' parameters in the
-        # FormField for conditional fields are not used.
-
-        # Create conditional fields for Cloud
-        conditional_fields_for_cloud = common_pb2.ConditionalFields(
-            condition=visibility_condition_for_cloud,
-            fields=[host, port, user, password, region],
-        )
-
-        # Create conditional fields for File
-        conditional_fields_for_file = common_pb2.ConditionalFields(
-            condition=visibility_condition_for_file,
-            fields=[host, port, user, password, table, file_path],
-        )
-
-        # Create conditional fields for Database
-        conditional_fields_for_database = common_pb2.ConditionalFields(
-            condition=visibility_condition_for_database,
-            fields=[url, host, port, user, password, database, table],
-        )
-
-        # Add conditional fields to the form
-        conditional_field_for_cloud = common_pb2.FormField(
-            name="conditional_field_for_cloud",
-            label="Conditional field for cloud",
-            conditional_fields=conditional_fields_for_cloud,
-        )
-
-        conditional_field_for_file = common_pb2.FormField(
-            name="conditional_field_for_file",
-            label="Conditional field for File",
-            conditional_fields=conditional_fields_for_file,
-        )
-
-        conditional_field_for_database = common_pb2.FormField(
-            name="conditional_field_for_database",
-            label="Conditional field for Database",
-            conditional_fields=conditional_fields_for_database,
-        )
-
-        # Add all fields to the form response
-        form_fields.fields.extend(
-            [
-                writer_type,
-                conditional_field_for_file,
-                conditional_field_for_cloud,
-                conditional_field_for_database,
-                enable_encryption,
-            ]
-        )
-
-        # Add tests to the form
+        # Add tests to the form.
         form_fields.tests.add(name="connect", label="Tests connection")
         # TODO: How to invoke this test?
         form_fields.tests.add(name="select", label="Tests selection")
