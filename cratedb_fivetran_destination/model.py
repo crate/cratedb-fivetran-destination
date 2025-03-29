@@ -13,7 +13,7 @@ from cratedb_fivetran_destination.sdk_pb2.common_pb2 import DataType
 
 class FieldMap:
     """
-    Manage special knowledge about CrateDB.
+    Manage special knowledge about CrateDB field names.
     """
 
     # Map special column names, because CrateDB does not allow `_` prefixes.
@@ -95,15 +95,22 @@ class TypeMap:
         sa.DECIMAL: DataType.DECIMAL,
         sa.BINARY: DataType.BINARY,
         ObjectType: DataType.JSON,
+        # FIXME: What about Arrays?
     }
 
     @classmethod
-    def fivetran_to_cratedb(cls, fivetran_type, fivetran_params=None):
+    def to_cratedb(cls, fivetran_type, fivetran_params=None):
+        """
+        Convert a Fivetran type into a CrateDB type.
+        """
         # TODO: Introduce parameter handling to type mappers.
         return cls.fivetran_map.get(fivetran_type, cls.cratedb_default)
 
     @classmethod
-    def cratedb_to_fivetran(cls, cratedb_type):
+    def to_fivetran(cls, cratedb_type):
+        """
+        Convert a CrateDB type into a Fivetran type.
+        """
         return cls.cratedb_map.get(type(cratedb_type), cls.fivetran_default)
 
 
@@ -131,6 +138,10 @@ class FivetranKnowledge:
 
 @define
 class TableInfo:
+    """
+    Manage information about a database table.
+    """
+
     fullname: str
     primary_keys: t.List[str] = Factory(list)
 

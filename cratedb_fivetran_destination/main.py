@@ -91,7 +91,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         for fivetran_column in request.table.columns:
             db_column: sa.Column = sa.Column()
             db_column.name = FieldMap.to_cratedb(fivetran_column.name)
-            db_column.type = TypeMap.fivetran_to_cratedb(fivetran_column.type)
+            db_column.type = TypeMap.to_cratedb(fivetran_column.type)
             db_column.primary_key = fivetran_column.primary_key
             if db_column.primary_key:
                 db_column.nullable = False
@@ -144,8 +144,8 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
                 columns_new.append(column)
             else:
                 columns_common.append(column)
-                type_old = TypeMap.fivetran_to_cratedb(column_old.type, column_old.params)
-                type_new = TypeMap.fivetran_to_cratedb(column.type, column.params)
+                type_old = TypeMap.to_cratedb(column_old.type, column_old.params)
+                type_new = TypeMap.to_cratedb(column.type, column.params)
                 if type_old != type_new:
                     if column_old.primary_key:
                         pk_has_changed = True
@@ -246,7 +246,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         for sa_column in sa_table.columns:
             ft_column = common_pb2.Column(
                 name=FieldMap.to_fivetran(sa_column.name),
-                type=TypeMap.cratedb_to_fivetran(sa_column.type),
+                type=TypeMap.to_fivetran(sa_column.type),
                 primary_key=sa_column.primary_key,
             )
             table.columns.append(ft_column)
