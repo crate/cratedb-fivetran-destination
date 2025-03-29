@@ -40,6 +40,35 @@ def test_api_test(capsys):
     assert out == format_log_message("Test database connection: foo", newline=True)
 
 
+def test_api_configuration_form(capsys):
+    """
+    Invoke gRPC API method `ConfigurationForm`.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    destination = CrateDBDestinationImpl()
+
+    # Invoke gRPC API method.
+    response = destination.ConfigurationForm(
+        request=common_pb2.ConfigurationFormRequest(),
+        context=common_pb2.ConfigurationFormResponse(),
+    )
+
+    # Extract field of concern.
+    url_field: common_pb2.FormField = response.fields[3].conditional_fields.fields[0]
+
+    # Validate fields.
+    assert url_field.name == "url"
+    assert "CrateDB database connection URL" in url_field.label
+
+    # Validate tests.
+    assert response.tests[0].name == "connect"
+
+    # Check log output.
+    out, err = capsys.readouterr()
+    assert out == format_log_message("Fetching configuration form", newline=True)
+
+
 def test_processor_failing(engine):
     table_info = TableInfo(fullname="foo.bar", primary_keys=["id"])
     p = Processor(engine=engine)
