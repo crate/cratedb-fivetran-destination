@@ -1,28 +1,29 @@
 # Backlog
 
-## Iteration +0
-- Does the code need to escape SQL identifiers?
-- Introduce parameter handling to type mappers
-- Error `ValueError: I/O operation on closed file.` when tearing down the test suite,
-  possibly from `test_processor_failing`?
-- Check FIXME and TODO items in code.
-
 ## Iteration +1
+- Introduce parameter handling to type mappers,
+  re. timestamp and decimal types
+- AlterTable: Implement `AlterTableRecreateStatements`
+- Soft deletes: Currently, the machinery does not discriminate between
+  `truncate_before` vs. `soft_truncate_before` or `delete` vs. `soft_delete`
+- General refactoring: `main.py` vs. `engine.py`
+- General docs: Improve inline comments
+- Submit report to https://github.com/crate/crate/issues/15161.
+  `InvalidColumnNameException["_fivetran_synced" conflicts with system column pattern]`
+  possibly from `test_processor_failing`?
+- Check FIXME and TODO items in code
 - Propagate `warning` messages into responses
-- Strip UI fields, just use `url`
-- Scan for TODO and FIXME items
 - Release v0.0.1
 
 ## Iteration +2
+- Error `ValueError: I/O operation on closed file.` when tearing down the test suite,
 - Documentation: The machinery renames all `_fivetran*` columns to `__fivetran*`
-- Currently, the machinery does not discriminate between `truncate_before`
-  vs. `soft_truncate_before` or `delete` vs. `soft_delete`
+- Documentation: Don't use `print` for debugging purposes
 - Documentation: CrateDB Guide
 - Documentation: Upstream
 
 ## Iteration +3
-- Submit report to https://github.com/crate/crate/issues/15161.
-  `InvalidColumnNameException["_fivetran_synced" conflicts with system column pattern]`
+- Does the SQL code need to escape SQL identifiers?
 - Mechanism to ignore errors?
 - Currently, the machinery does not invoke any `REFRESH TABLE` statements (caveat!)
 - Import Parquet for testing purposes?
@@ -39,3 +40,4 @@
 - Complete `DataType.*` and `RecordType.{UPSERT,UPDATE,DELETE,TRUNCATE}`,
   see `cratedb_fivetran_destination/sdk_pb2/common_pb2.pyi`.
 - Release v0.0.0
+- Strip UI fields, just use `url`
