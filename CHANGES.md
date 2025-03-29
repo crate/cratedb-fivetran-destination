@@ -6,6 +6,7 @@
 - Added implementation for `AlterTable` gRPC method
 - Type mapping: Mapped `Fivetran.SHORT` to `SQLAlchemy.SmallInteger`
 - Type mapping: Mapped `SQLAlchemy.DateTime` to `Fivetran.UTC_DATETIME`
+- UI: Removed unneeded form fields. Added unit test.
 
 ## v0.0.0 - 2025-02-17
 - Added project skeleton
