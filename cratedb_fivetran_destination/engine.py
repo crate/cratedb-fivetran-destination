@@ -115,7 +115,7 @@ class AlterTableInplaceStatements:
         for column in self.columns_changed:
             column_name = FieldMap.to_cratedb(column.name)
             column_name_temporary = column_name + "_alter_tmp"
-            type_ = TypeMap.fivetran_to_cratedb(column.type, column.params)
+            type_ = TypeMap.to_cratedb(column.type, column.params)
             query.append(
                 f"ALTER TABLE {self.table.fullname} ADD COLUMN {column_name_temporary} {type_}; "
             )
@@ -139,7 +139,7 @@ class AlterTableInplaceStatements:
     @staticmethod
     def column_definition(column):
         field = FieldMap.to_cratedb(column.name)
-        type_ = TypeMap.fivetran_to_cratedb(column.type, column.params)
+        type_ = TypeMap.to_cratedb(column.type, column.params)
         return f"{field} {type_}"
 
 

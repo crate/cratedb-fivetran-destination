@@ -1,5 +1,12 @@
 # Backlog
 
+## Iteration +0
+- Does the code need to escape SQL identifiers?
+- Introduce parameter handling to type mappers
+- Error `ValueError: I/O operation on closed file.` when tearing down the test suite,
+  possibly from `test_processor_failing`?
+- Check FIXME and TODO items in code.
+
 ## Iteration +1
 - Propagate `warning` messages into responses
 - Strip UI fields, just use `url`
