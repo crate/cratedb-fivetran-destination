@@ -50,7 +50,7 @@ docker run --rm \
 
 Start gRPC destination server.
 ```bash
-python -m cratedb_fivetran_destination.main
+cratedb-fivetran-destination
 ```
 
 [Install the gcloud CLI] and start [Fivetran destination tester].

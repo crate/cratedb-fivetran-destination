@@ -54,7 +54,7 @@ pip install --upgrade cratedb-fivetran-destination
 
 Start gRPC destination server.
 ```bash
-python -m cratedb_fivetran_destination.main
+cratedb-fivetran-destination --port=50052 --max-workers=1
 ```
 
 ## Project Information

@@ -21,7 +21,6 @@ from cratedb_fivetran_destination.util import (
     LOG_SEVERE,
     LOG_WARNING,
     log_message,
-    setup_logging,
 )
 
 from . import read_csv
@@ -309,19 +308,11 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         return f'"{request.schema_name}"."{table_name}"'
 
 
-def start_server():
-    setup_logging()
-    server = grpc.server(futures.ThreadPoolExecutor(max_workers=1))
-    server.add_insecure_port("[::]:50052")
+def start_server(port: int = 50052, max_workers: int = 1) -> grpc.Server:
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
+    server.add_insecure_port(f"[::]:{port}")
     destination_sdk_pb2_grpc.add_DestinationConnectorServicer_to_server(
         CrateDBDestinationImpl(), server
     )
     server.start()
     return server
-
-
-if __name__ == "__main__":  # pragma: no cover
-    server = start_server()
-    logger.info("Destination gRPC server started")
-    server.wait_for_termination()
-    logger.info("Destination gRPC server terminated")

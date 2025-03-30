@@ -71,6 +71,7 @@ dynamic = [
 ]
 
 dependencies = [
+  "click<9",
   "google<3.1",
   "grpcio<1.71",
   "grpcio-tools<1.71",
@@ -97,13 +98,16 @@ optional-dependencies.test = [
   "pretend<2",
   "pytest<9",
   "pytest-cov<7",
+  "pytest-mock<4",
 ]
 urls."Release Notes" = "https://github.com/crate/cratedb-fivetran-destination/releases"
 
 urls.Repository = "https://github.com/crate/cratedb-fivetran-destination"
 
+scripts.cratedb-fivetran-destination = "cratedb_fivetran_destination.cli:main"
+
 [tool.setuptools]
-packages = [ "cratedb_fivetran_destination" ]
+packages = [ "cratedb_fivetran_destination", "cratedb_fivetran_destination.sdk_pb2" ]
 
 [tool.ruff]
 line-length = 100
