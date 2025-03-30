@@ -1,0 +1,15 @@
+*
+
+!.git
+!docs
+!release
+!cratedb_fivetran_destination
+
+!*.cfg
+!*.md
+!*.py
+!*.rst
+!*.toml
+!*.txt
+!LICENSE
+!MANIFEST.in

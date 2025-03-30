@@ -68,8 +68,24 @@ docker run --rm -it \
   --tester-type destination --port 50052
 ```
 
+## OCI builds
 
-## Release
+Build OCI images on your workstation.
+```shell
+export BUILDKIT_PROGRESS=plain
+export COMPOSE_DOCKER_CLI_BUILD=1
+export DOCKER_BUILDKIT=1
+```
+```shell
+docker build --tag=local/cratedb-fivetran-destination --file=release/oci/Dockerfile .
+```
+Roughly verify that invocation works.
+```shell
+docker run --rm local/cratedb-fivetran-destination --version
+```
+
+## Python package release
+
 ```shell
 poe release
 ```

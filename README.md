@@ -47,14 +47,23 @@ see [CrateDB Installation], or [CrateDB Cloud Console].
 ## Installation
 
 ```bash
-pip install --upgrade cratedb-fivetran-destination
+uv tool install --upgrade cratedb-fivetran-destination
 ```
 
 ## Usage
 
-Start gRPC destination server.
+Start gRPC destination server. Note the parameters are optional.
 ```bash
 cratedb-fivetran-destination --port=50052 --max-workers=1
+```
+
+## OCI
+
+You can use the OCI image [ghcr.io/crate/cratedb-fivetran-destination] at your
+disposal. CI is building image variants for each pr, each night, and for
+GA releases.
+```bash
+docker run --rm --publish=50052:50052 ghcr.io/crate/cratedb-fivetran-destination:nightly
 ```
 
 ## Project Information
@@ -91,6 +100,7 @@ The project uses the Apache license, like CrateDB itself.
 [CrateDBVectorStore]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/docs/vectorstores.ipynb
 [crate]: https://pypi.org/project/crate/
 [Fivetran SDK Development Guide]: https://github.com/fivetran/fivetran_sdk/blob/main/development-guide.md
+[ghcr.io/crate/cratedb-fivetran-destination]: https://github.com/crate/cratedb-fivetran-destination/pkgs/container/cratedb-fivetran-destination
 
 [Changelog]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/CHANGES.md
 [Community Forum]: https://community.cratedb.com/
