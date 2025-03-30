@@ -79,20 +79,32 @@ class TypeMap:
     }
 
     cratedb_map = {
-        sa.String: DataType.STRING,
         sa.Text: DataType.STRING,
+        sa.TEXT: DataType.STRING,
+        sa.VARCHAR: DataType.STRING,
         sa.Boolean: DataType.BOOLEAN,
+        sa.BOOLEAN: DataType.BOOLEAN,
         sa.SmallInteger: DataType.SHORT,
         sa.Integer: DataType.INT,
         sa.BigInteger: DataType.LONG,
+        sa.SMALLINT: DataType.SHORT,
+        sa.INTEGER: DataType.INT,
+        sa.BIGINT: DataType.LONG,
         sa.Float: DataType.FLOAT,
+        sa.FLOAT: DataType.FLOAT,
         sa.Double: DataType.DOUBLE,
+        sa.DOUBLE: DataType.DOUBLE,
+        sa.DOUBLE_PRECISION: DataType.DOUBLE,
         sa.Date: DataType.NAIVE_DATE,
+        sa.DATE: DataType.NAIVE_DATE,
         # FIXME: Which one to choose?
         #        Need better inspection about aware/unaware datetime objects?
         # sa.DateTime: DataType.NAIVE_DATETIME,
         sa.DateTime: DataType.UTC_DATETIME,
+        sa.DATETIME: DataType.UTC_DATETIME,
+        sa.Numeric: DataType.DECIMAL,
         sa.DECIMAL: DataType.DECIMAL,
+        sa.LargeBinary: DataType.BINARY,
         sa.BINARY: DataType.BINARY,
         ObjectType: DataType.JSON,
         # FIXME: What about Arrays?

@@ -1,6 +1,7 @@
 # Backlog
 
 ## Iteration +1
+- Does `SELECT '100.23'::BIGINT;` work on PostgreSQL?
 - Introduce parameter handling to type mappers,
   re. timestamp and decimal types
 - AlterTable: Implement `AlterTableRecreateStatements`
