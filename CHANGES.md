@@ -7,6 +7,7 @@
 - Type mapping: Mapped `SQLAlchemy.DateTime` to `Fivetran.UTC_DATETIME`
 - UI: Removed unneeded form fields. Added unit test.
 - CLI: Provided command-line interface for `--port` and `--max-workers` options
+- OCI: Provided container image `ghcr.io/crate/cratedb-fivetran-destination`
 
 ## v0.0.0 - 2025-02-17
 - Added project skeleton
