@@ -8,6 +8,7 @@
 - UI: Removed unneeded form fields. Added unit test.
 - CLI: Provided command-line interface for `--port` and `--max-workers` options
 - OCI: Provided container image `ghcr.io/crate/cratedb-fivetran-destination`
+- Packaging: Removed SDK from repository, build at build-time instead
 
 ## v0.0.0 - 2025-02-17
 - Added project skeleton

@@ -1,7 +1,8 @@
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
-  "setuptools>=42", # At least v42 of setuptools required.
+  "grpcio-tools<1.71",
+  "setuptools>=42",
   "versioningit",
 ]
 
@@ -107,12 +108,13 @@ urls.Repository = "https://github.com/crate/cratedb-fivetran-destination"
 scripts.cratedb-fivetran-destination = "cratedb_fivetran_destination.cli:main"
 
 [tool.setuptools]
-packages = [ "cratedb_fivetran_destination", "cratedb_fivetran_destination.sdk_pb2" ]
+package-dir = { "" = ".", "fivetran_sdk" = "src/fivetran_sdk" }
+packages = [ "cratedb_fivetran_destination", "fivetran_sdk" ]
 
 [tool.ruff]
 line-length = 100
 extend-exclude = [
-  "cratedb_fivetran_destination/sdk_pb2",
+  "src/fivetran_sdk",
 ]
 
 lint.select = [
@@ -160,7 +162,6 @@ markers = [
 
 [tool.coverage.run]
 omit = [
-  "cratedb_fivetran_destination/sdk_pb2/*",
   "tests/*",
 ]
 source = [ "cratedb_fivetran_destination" ]
@@ -173,7 +174,6 @@ show_missing = true
 packages = [ "cratedb_fivetran_destination" ]
 check_untyped_defs = true
 exclude = [
-  'common_pb2\.pyi$',
 ]
 explicit_package_bases = true
 ignore_missing_imports = true

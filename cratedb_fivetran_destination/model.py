@@ -7,8 +7,8 @@ from attrs import define
 from sqlalchemy_cratedb import ObjectType
 from tikray.util.dictx import OrderedDictX
 
-from cratedb_fivetran_destination.sdk_pb2 import common_pb2
-from cratedb_fivetran_destination.sdk_pb2.common_pb2 import DataType
+from fivetran_sdk import common_pb2
+from fivetran_sdk.common_pb2 import DataType
 
 
 class FieldMap:
