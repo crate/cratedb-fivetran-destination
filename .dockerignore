@@ -1,9 +1,10 @@
 *
 
 !.git
+!cratedb_fivetran_destination
 !docs
 !release
-!cratedb_fivetran_destination
+!src
 
 !*.cfg
 !*.md

@@ -6,8 +6,8 @@ import sqlalchemy as sa
 from cratedb_fivetran_destination import __version__
 from cratedb_fivetran_destination.engine import Processor
 from cratedb_fivetran_destination.model import TableInfo
-from cratedb_fivetran_destination.sdk_pb2 import common_pb2, destination_sdk_pb2
 from cratedb_fivetran_destination.util import format_log_message, setup_logging
+from fivetran_sdk import common_pb2, destination_sdk_pb2
 
 
 def test_version():

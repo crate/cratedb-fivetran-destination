@@ -3,17 +3,20 @@ FROM python:3.13-slim-bookworm AS build
 
 ARG BUILD=/usr/src
 
-# Configure operating system
+# Configure operating system.
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TERM=linux
 
-# Install prerequisites
+# Install prerequisites.
 RUN apt-get update
 RUN apt-get --yes install --no-install-recommends --no-install-suggests git wget
 
+# Install package builder.
+ENV PIP_ROOT_USER_ACTION=ignore
 RUN pip install build
 RUN python -m build --version
 
+# Build wheel package.
 COPY . ${BUILD}
 RUN python -m build --wheel ${BUILD}
 

@@ -7,7 +7,7 @@ from attrs import define
 from toolz import dissoc
 
 from cratedb_fivetran_destination.model import FieldMap, SqlBag, TableInfo, TypeMap
-from cratedb_fivetran_destination.sdk_pb2 import common_pb2
+from fivetran_sdk import common_pb2
 
 logger = logging.getLogger()
 

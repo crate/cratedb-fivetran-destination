@@ -3,7 +3,10 @@ __pycache__
 .idea
 .mypy_cache*
 coverage.xml
-dist
-protos
+/build
+/dist
+/protos
+/src/fivetran_sdk/*
+!/src/fivetran_sdk/__init__.py
 *.csv.zstd.aes
 *.egg-info

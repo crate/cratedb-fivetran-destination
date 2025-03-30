@@ -15,16 +15,10 @@ from cratedb_fivetran_destination.model import (
     TableInfo,
     TypeMap,
 )
-from cratedb_fivetran_destination.sdk_pb2.common_pb2 import Column
-from cratedb_fivetran_destination.util import (
-    LOG_INFO,
-    LOG_SEVERE,
-    LOG_WARNING,
-    log_message,
-)
+from cratedb_fivetran_destination.util import LOG_INFO, LOG_SEVERE, LOG_WARNING, log_message
+from fivetran_sdk import common_pb2, destination_sdk_pb2, destination_sdk_pb2_grpc
 
 from . import read_csv
-from .sdk_pb2 import common_pb2, destination_sdk_pb2, destination_sdk_pb2_grpc
 
 logger = logging.getLogger()
 
@@ -86,7 +80,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             + str(request.table.columns)
         )
         table = sa.Table(request.table.name, self.metadata, schema=request.schema_name)
-        fivetran_column: Column
+        fivetran_column: common_pb2.Column
         for fivetran_column in request.table.columns:
             db_column: sa.Column = sa.Column()
             db_column.name = FieldMap.to_cratedb(fivetran_column.name)
