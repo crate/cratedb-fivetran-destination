@@ -73,15 +73,15 @@ The project uses the Apache license, like CrateDB itself.
 [CrateDB destination adapter for Fivetran]: https://cratedb.com/docs/guide/integrate/fivetran/
 [Fivetran]: https://www.fivetran.com/
 [Fivetran SDK Development Guide]: https://github.com/fivetran/fivetran_sdk/blob/main/development-guide.md
-[handbook]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/docs/handbook.md
+[handbook]: https://github.com/crate/cratedb-fivetran-destination/blob/main/docs/handbook.md
 [issue tracker]: https://github.com/crate/cratedb-fivetran-destination/issues
 [OCI image]: https://github.com/crate/cratedb-fivetran-destination/pkgs/container/cratedb-fivetran-destination
 
-[Changelog]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/CHANGES.md
+[Changelog]: https://github.com/crate/cratedb-fivetran-destination/blob/main/CHANGES.md
 [Community Forum]: https://community.cratedb.com/
 [Documentation]: https://cratedb.com/docs/guide/integrate/fivetran/
 [Issues]: https://github.com/crate/cratedb-fivetran-destination/issues
-[License]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/LICENSE
+[License]: https://github.com/crate/cratedb-fivetran-destination/blob/main/LICENSE
 [managed on GitHub]: https://github.com/crate/cratedb-fivetran-destination
 [PyPI]: https://pypi.org/project/cratedb-fivetran-destination/
 [Source code]: https://github.com/crate/cratedb-fivetran-destination
@@ -99,6 +99,6 @@ The project uses the Apache license, like CrateDB itself.
 [project-ci]: https://github.com/crate/cratedb-fivetran-destination/actions/workflows/tests.yml
 [project-coverage]: https://app.codecov.io/gh/crate/cratedb-fivetran-destination
 [project-downloads]: https://pepy.tech/project/cratedb-fivetran-destination/
-[project-license]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/LICENSE
+[project-license]: https://github.com/crate/cratedb-fivetran-destination/blob/main/LICENSE
 [project-pypi]: https://pypi.org/project/cratedb-fivetran-destination
 [project-release-notes]: https://github.com/crate/cratedb-fivetran-destination/releases
