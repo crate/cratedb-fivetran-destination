@@ -1,13 +1,13 @@
 # CrateDB Fivetran Destination
 
 [![Bluesky][badge-bluesky]][project-bluesky]
+[![License][badge-license]][project-license]
 [![Release Notes][badge-release-notes]][project-release-notes]
-[![CI][badge-ci]][project-ci]
-[![Coverage][badge-coverage]][project-coverage]
+[![Package version][badge-package-version]][project-pypi]
 [![Downloads per month][badge-downloads-per-month]][project-downloads]
 
-[![Package version][badge-package-version]][project-pypi]
-[![License][badge-license]][project-license]
+[![CI][badge-ci]][project-ci]
+[![Coverage][badge-coverage]][project-coverage]
 [![Status][badge-status]][project-pypi]
 [![Supported Python versions][badge-python-versions]][project-pypi]
 
@@ -20,51 +20,36 @@
 | [CrateDB]
 | [Community Forum]
 
-The `cratedb-fivetran-destination` package implements the [CrateDB destination
-adapter for Fivetran]. It works with both [CrateDB] and [CrateDB Cloud].
+## About
 
-Feel free to use the adapter as provided or else modify / extend it
-as appropriate for your own applications. We appreciate contributions of any kind.
-
-## Introduction
-
-CrateDB is a distributed and scalable SQL database for storing and analyzing
-massive amounts of data in near real-time, even with complex queries.
-It is PostgreSQL-compatible, and based on Lucene.
-
-Fivetran is an automated data movement platform. Automatically, reliably and
+[Fivetran] is an automated data movement platform. Automatically, reliably and
 securely move data from 650+ sources including SaaS applications, databases,
 ERPs, and files to data warehouses, data lakes, and more.
 
-## Requirements
+[CrateDB] is a distributed and scalable SQL database for storing and analyzing
+massive amounts of data in near real-time, even with complex queries. 
+CrateDB is based on Lucene and Elasticsearch, but [compatible with PostgreSQL].
 
-The package is based on [CrateDB's SQLAlchemy dialect] package.
-It will be automatically installed when installing the Fivetran adapter.
+## What's inside
 
-You can run [CrateDB Self-Managed] or start using [CrateDB Cloud],
-see [CrateDB Installation], or [CrateDB Cloud Console].
+This project and repository provides:
 
-## Installation
+- The source code of the `cratedb-fivetran-destination` package, which implements
+  the [CrateDB destination adapter for Fivetran]. It works with both [CrateDB] and
+  [CrateDB Cloud].
 
-```bash
-uv tool install --upgrade cratedb-fivetran-destination
-```
+- The public [issue tracker] for this project. Please use it
+  to report problems, and stay informed about their resolutions.
+
+## Status
+
+The status of this software is to be considered work-in-progress,
+i.e. pre-alpha.
 
 ## Usage
 
-Start gRPC destination server. Note the parameters are optional.
-```bash
-cratedb-fivetran-destination --port=50052 --max-workers=1
-```
-
-## OCI
-
-You can use the OCI image [ghcr.io/crate/cratedb-fivetran-destination] at your
-disposal. CI is building image variants for each pr, each night, and for
-GA releases.
-```bash
-docker run --rm --publish=50052:50052 ghcr.io/crate/cratedb-fivetran-destination:nightly
-```
+For installation per [PyPI package][PyPI] or [OCI image], and usage
+information, please visit the [handbook] document.
 
 ## Project Information
 
@@ -73,34 +58,24 @@ Kudos to the authors of all the many software components this library is
 inheriting from and building upon.
 
 ### Contributing
-The `cratedb-fivetran-destination` package is an open source project, and is
-[managed on GitHub]. We appreciate contributions of any kind.
-
-### Status
-
-The adapter is still in its infancy and needs exposure to remedy teething
-problems.
-
-On its next iterations, we will evaluate if the encoding (column mapping) style
-needs to be adjusted, and if the type mapping needs improvements.
-Also, a few more other details around recommendations from the [Fivetran SDK
-Development Guide] will be improved.
-
+The CrateDB connector for Fivetran is an open-source project, and is
+[managed on GitHub].
+Feel free to use the adapter as provided or else modify / extend it
+as appropriate for your own applications. We appreciate contributions of any kind.
 
 ### License
 The project uses the Apache license, like CrateDB itself.
 
 
+[compatible with PostgreSQL]: https://cratedb.com/docs/guide/feature/postgresql-compatibility/
 [CrateDB]: https://cratedb.com/database
 [CrateDB Cloud]: https://cratedb.com/database/cloud
-[CrateDB Cloud Console]: https://console.cratedb.cloud/
-[CrateDB Installation]: https://cratedb.com/docs/guide/install/
-[CrateDB Self-Managed]: https://cratedb.com/database/self-managed
-[CrateDB's SQLAlchemy dialect]: https://cratedb.com/docs/sqlalchemy-cratedb/
-[CrateDBVectorStore]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/docs/vectorstores.ipynb
-[crate]: https://pypi.org/project/crate/
+[CrateDB destination adapter for Fivetran]: https://cratedb.com/docs/guide/integrate/fivetran/
+[Fivetran]: https://www.fivetran.com/
 [Fivetran SDK Development Guide]: https://github.com/fivetran/fivetran_sdk/blob/main/development-guide.md
-[ghcr.io/crate/cratedb-fivetran-destination]: https://github.com/crate/cratedb-fivetran-destination/pkgs/container/cratedb-fivetran-destination
+[handbook]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/docs/handbook.md
+[issue tracker]: https://github.com/crate/cratedb-fivetran-destination/issues
+[OCI image]: https://github.com/crate/cratedb-fivetran-destination/pkgs/container/cratedb-fivetran-destination
 
 [Changelog]: https://github.com/crate/cratedb-fivetran-destination/blob/cratedb/CHANGES.md
 [Community Forum]: https://community.cratedb.com/
