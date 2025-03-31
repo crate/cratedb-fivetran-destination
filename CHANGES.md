@@ -1,6 +1,8 @@
 # CrateDB Fivetran Destination Changelog
 
 ## Unreleased
+
+## v0.0.1 - 2025-03-31
 - Added implementation for `DescribeTable` gRPC method
 - Added implementation for `AlterTable` gRPC method
 - Type mapping: Mapped `Fivetran.SHORT` to `SQLAlchemy.SmallInteger`
