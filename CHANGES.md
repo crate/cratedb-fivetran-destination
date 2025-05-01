@@ -3,6 +3,9 @@
 ## Unreleased
 - CLI: Added `--host` option to define on which host to listen on.
   Default: [::]
+- Packaging: Improved bootstrapping by supporting directory-based invocation
+  per `python src/cratedb_fivetran_destination` and PyInstaller builds per
+  `poe build-app`
 
 ## v0.0.1 - 2025-03-31
 - Added implementation for `DescribeTable` gRPC method

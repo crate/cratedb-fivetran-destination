@@ -35,3 +35,7 @@ def main(ctx: click.Context, host: str, port: int, max_workers: int) -> None:
     logger.info(f"Fivetran CrateDB Destination gRPC server started on {host}:{port}")
     server.wait_for_termination()
     logger.info("Fivetran CrateDB Destination gRPC server terminated")
+
+
+if __name__ == "__main__":  # pragma: nocover
+    main()
