@@ -48,8 +48,17 @@ i.e. pre-alpha.
 
 ## Usage
 
-For installation per [PyPI package][PyPI] or [OCI image], and usage
-information, please visit the [handbook] document.
+For installation per [PyPI package][PyPI], [OCI image], [standalone executable],
+and usage information, please visit the [handbook] document.
+
+## Build
+Build a standalone executable using PyInstaller:
+```shell
+git clone https://github.com/crate/cratedb-fivetran-destination
+cd cratedb-fivetran-destination
+uv pip install --upgrade --editable='.[release]'
+uv run poe build-app
+```
 
 ## Project Information
 
@@ -76,6 +85,7 @@ The project uses the Apache license, like CrateDB itself.
 [handbook]: https://github.com/crate/cratedb-fivetran-destination/blob/main/docs/handbook.md
 [issue tracker]: https://github.com/crate/cratedb-fivetran-destination/issues
 [OCI image]: https://github.com/crate/cratedb-fivetran-destination/pkgs/container/cratedb-fivetran-destination
+[standalone executable]: https://github.com/crate/cratedb-fivetran-destination/releases
 
 [Changelog]: https://github.com/crate/cratedb-fivetran-destination/blob/main/CHANGES.md
 [Community Forum]: https://community.cratedb.com/
