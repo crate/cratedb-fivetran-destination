@@ -107,10 +107,6 @@ urls.Repository = "https://github.com/crate/cratedb-fivetran-destination"
 
 scripts.cratedb-fivetran-destination = "cratedb_fivetran_destination.cli:main"
 
-[tool.setuptools]
-package-dir = { "" = ".", "fivetran_sdk" = "src/fivetran_sdk" }
-packages = [ "cratedb_fivetran_destination", "fivetran_sdk" ]
-
 [tool.ruff]
 line-length = 100
 extend-exclude = [
