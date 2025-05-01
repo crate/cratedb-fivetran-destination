@@ -1,6 +1,8 @@
 # CrateDB Fivetran Destination Changelog
 
 ## Unreleased
+- CLI: Added `--host` option to define on which host to listen on.
+  Default: [::]
 
 ## v0.0.1 - 2025-03-31
 - Added implementation for `DescribeTable` gRPC method
