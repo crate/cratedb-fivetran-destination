@@ -25,6 +25,11 @@ Start gRPC destination server. Note the parameters are optional.
 cratedb-fivetran-destination --port=50052 --max-workers=1
 ```
 
+## Standalone executables
+
+CI on this project created standalone executables for different architectures
+using [PyInstaller], and publishes them on its [releases] page.
+
 ## Container use
 
 Invoke the OCI image [ghcr.io/crate/cratedb-fivetran-destination] at your
@@ -53,4 +58,6 @@ The first GA release will be `cratedb-fivetran-destination:0.0.1`.
 [ghcr.io/crate/cratedb-fivetran-destination]: https://github.com/crate/cratedb-fivetran-destination/pkgs/container/cratedb-fivetran-destination
 [uv]: https://docs.astral.sh/uv/
 [OCI image]: https://github.com/crate/cratedb-fivetran-destination/pkgs/container/cratedb-fivetran-destination
+[PyInstaller]: https://pyinstaller.org/
 [PyPI]: https://pypi.org/project/cratedb-fivetran-destination/
+[releases]: https://github.com/crate/cratedb-fivetran-destination/releases

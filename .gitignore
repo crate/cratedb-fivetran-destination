@@ -10,3 +10,4 @@ coverage.xml
 !/src/fivetran_sdk/__init__.py
 *.csv.zstd.aes
 *.egg-info
+*.spec
