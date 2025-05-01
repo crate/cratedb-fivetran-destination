@@ -1,6 +1,6 @@
 # Stage OCI container images through GitHub Actions (GHA) to GitHub Container Registry (GHCR).
 # The image is available per `ghcr.io/crate/cratedb-fivetran-destination`.
-name: OCI
+name: "Release: OCI image"
 
 on:
 
@@ -9,7 +9,7 @@ on:
     branches:
       - 'main'
     tags:
-      - '*.*.*'
+      - '*'
 
   # Build images on each pull request.
   # Remark: Activate only when needed, it will eat a lot of resources. The alternative

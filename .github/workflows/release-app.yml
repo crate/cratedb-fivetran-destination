@@ -1,0 +1,111 @@
+# Stage PyInstaller application bundles through GitHub Actions (GHA) to GitHub Workflow Artifacts and GitHub Releases.
+# https://github.com/actions/upload-artifact#where-does-the-upload-go
+
+name: "Release: Application bundle"
+
+on:
+
+  # Build and publish application when running a release.
+  push:
+    tags:
+      - '*'
+
+  # Build application on each pull request for validation purposes.
+  pull_request:
+
+  # Build application each night for validation purposes.
+  schedule:
+    - cron: '0 4 * * *'
+
+  # Allow the job to be triggered manually.
+  workflow_dispatch:
+
+jobs:
+
+  build:
+    name: "Build for OS ${{ matrix.os }}"
+
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [
+          "macos-13",        # Intel
+          "macos-latest",    # ARM
+          "ubuntu-latest",   # Intel
+          # "windows-latest",  # Intel
+        ]
+        python-version: ["3.11"]
+      # TODO: Also build for Linux/ARM, because this platform gets more traction in datacenters.
+      # - https://github.blog/changelog/2024-06-03-actions-arm-based-linux-and-windows-runners-are-now-in-public-beta/
+      # - https://arm-software.github.io/AVH/main/infrastructure/html/avh_gh.html
+      # - via: https://github.com/actions/partner-runner-images
+    env:
+      OS_TYPE: ${{ matrix.os }}
+      PYTHON_VERSION: ${{ matrix.python-version }}
+      UV_SYSTEM_PYTHON: true
+
+    steps:
+
+    - name: Acquire sources
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Set up uv
+      uses: astral-sh/setup-uv@v6
+      with:
+        cache-dependency-glob: |
+          pyproject.toml
+        cache-suffix: ${{ matrix.python-version }}
+        enable-cache: true
+        version: "latest"
+
+    - name: Build application bundle
+      run: |
+        uv pip install '.[release]'
+        uv run poe build-app
+
+    - name: Compute artifact suffix (OS-ARCH)
+      id: artifact-suffix
+      uses: ASzc/change-string-case-action@v6
+      with:
+        # linux-x64,macos-arm64,macos-x64,windows-x64
+        string: "${{ runner.os }}-${{ runner.arch }}"
+
+    - name: Upload artifact to Workflow Artifacts (Linux and macOS)
+      if: runner.os != 'Windows'
+      uses: actions/upload-artifact@v4
+      with:
+        name: "cratedb-fivetran-destination-${{ steps.artifact-suffix.outputs.lowercase }}"
+        path: dist/cratedb-fivetran-destination
+
+    - name: Upload artifact to Workflow Artifacts (Windows)
+      if: runner.os == 'Windows'
+      uses: actions/upload-artifact@v4
+      with:
+        name: "cratedb-fivetran-destination-${{ steps.artifact-suffix.outputs.lowercase }}"
+        path: dist/cratedb-fivetran-destination.exe
+
+  release:
+    name: "Release on GitHub"
+    needs: [ build ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+
+    - name: Display downloaded files
+      run: ls -R
+
+    - name: Create release
+      if: startsWith(github.event.ref, 'refs/tags')
+      uses: ncipollo/release-action@v1
+      with:
+        artifacts: "cratedb-fivetran-destination-*"

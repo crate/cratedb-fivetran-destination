@@ -6,6 +6,7 @@
 - Packaging: Improved bootstrapping by supporting directory-based invocation
   per `python src/cratedb_fivetran_destination` and PyInstaller builds per
   `poe build-app`
+- Release: Started providing standalone executables on the [releases] page.
 
 ## v0.0.1 - 2025-03-31
 - Added implementation for `DescribeTable` gRPC method
@@ -28,3 +29,5 @@
 - Transform: Fivetran uses special values for designating `NULL` and
   CDC-unmodified values.
 - Types: Added support for all Fivetran data types
+
+[releases]: https://github.com/crate/cratedb-fivetran-destination/releases
