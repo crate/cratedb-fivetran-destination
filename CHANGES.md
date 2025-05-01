@@ -1,6 +1,8 @@
 # CrateDB Fivetran Destination Changelog
 
 ## Unreleased
+
+## v0.0.2 - 2025-05-01
 - CLI: Added `--host` option to define on which host to listen on.
   Default: [::]
 - Packaging: Improved bootstrapping by supporting directory-based invocation
