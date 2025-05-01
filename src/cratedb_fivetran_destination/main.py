@@ -302,9 +302,9 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         return f'"{request.schema_name}"."{table_name}"'
 
 
-def start_server(port: int = 50052, max_workers: int = 1) -> grpc.Server:
+def start_server(host: str = "[::]", port: int = 50052, max_workers: int = 1) -> grpc.Server:
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=max_workers))
-    server.add_insecure_port(f"[::]:{port}")
+    server.add_insecure_port(f"{host}:{port}")
     destination_sdk_pb2_grpc.add_DestinationConnectorServicer_to_server(
         CrateDBDestinationImpl(), server
     )
