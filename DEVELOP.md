@@ -70,6 +70,12 @@ docker run --rm -it \
 
 ## Building
 
+### Dependencies
+Write runtime dependencies to `requirements.txt` file.
+```shell
+uv run poe build-requirements
+```
+
 ### Standalone builds
 Build a standalone executable using PyInstaller.
 ```shell
