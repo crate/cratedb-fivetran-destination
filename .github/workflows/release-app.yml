@@ -11,11 +11,11 @@ on:
       - '*'
 
   # Build application on each pull request for validation purposes.
-  pull_request:
+  # pull_request:
 
   # Build application each night for validation purposes.
-  schedule:
-    - cron: '0 4 * * *'
+  # schedule:
+  #   - cron: '0 4 * * *'
 
   # Allow the job to be triggered manually.
   workflow_dispatch:
