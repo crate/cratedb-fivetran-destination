@@ -1,5 +1,9 @@
 # Backlog
 
+## Iteration +0
+- Performance: https://github.com/crate/cratedb-fivetran-destination/issues/11
+- Interoperability: https://github.com/crate/cratedb-fivetran-destination/issues/8
+
 ## Iteration +1
 - Does `SELECT '100.23'::BIGINT;` work on PostgreSQL?
 - Introduce parameter handling to type mappers,
