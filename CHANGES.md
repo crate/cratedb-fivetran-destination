@@ -2,7 +2,8 @@
 
 ## Unreleased
 - Dependencies: Updated to `sqlalchemy-cratedb==0.42.0.dev2`
-- Build: Add target to generate `requirements.txt`, and add the generated file
+- Build: Added target to generate `requirements.txt`, and added the generated file
+- CI: Stopped building OCI images and standalone artifacts
 
 ## v0.0.2 - 2025-05-01
 - CLI: Added `--host` option to define on which host to listen on.
