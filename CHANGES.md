@@ -1,6 +1,7 @@
 # CrateDB Fivetran Destination Changelog
 
 ## Unreleased
+- Dependencies: Updated to `sqlalchemy-cratedb==0.42.0.dev2`
 
 ## v0.0.2 - 2025-05-01
 - CLI: Added `--host` option to define on which host to listen on.
