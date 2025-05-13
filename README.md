@@ -51,14 +51,8 @@ i.e. pre-alpha.
 For installation per [PyPI package][PyPI], [OCI image], [standalone executable],
 and usage information, please visit the [handbook] document.
 
-## Build
-Build a standalone executable using PyInstaller:
-```shell
-git clone https://github.com/crate/cratedb-fivetran-destination
-cd cratedb-fivetran-destination
-uv pip install --upgrade --editable='.[release]'
-uv run poe build-app
-```
+For building the application, or hacking on it, please refer to the
+[development sandbox] documentation.
 
 ## Project Information
 
@@ -80,6 +74,7 @@ The project uses the Apache license, like CrateDB itself.
 [CrateDB]: https://cratedb.com/database
 [CrateDB Cloud]: https://cratedb.com/database/cloud
 [CrateDB destination adapter for Fivetran]: https://cratedb.com/docs/guide/integrate/fivetran/
+[development sandbox]: https://github.com/crate/cratedb-fivetran-destination/blob/main/DEVELOP.md
 [Fivetran]: https://www.fivetran.com/
 [Fivetran SDK Development Guide]: https://github.com/fivetran/fivetran_sdk/blob/main/development-guide.md
 [handbook]: https://github.com/crate/cratedb-fivetran-destination/blob/main/docs/handbook.md

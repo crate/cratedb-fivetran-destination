@@ -9,7 +9,7 @@ with the [Fivetran SDK Development Guide].
 ```shell
 git clone https://github.com/crate/cratedb-fivetran-destination.git
 cd cratedb-fivetran-destination
-uv venv --seed
+uv venv --python 3.13 --seed .venv
 source .venv/bin/activate
 uv pip install --upgrade --editable='.[develop,test]'
 ```
@@ -68,8 +68,16 @@ docker run --rm -it \
   --tester-type destination --port 50052
 ```
 
-## OCI builds
+## Building
 
+### Standalone builds
+Build a standalone executable using PyInstaller.
+```shell
+uv pip install --upgrade --editable='.[release]'
+uv run poe build-app
+```
+
+### OCI builds
 Build OCI images on your workstation.
 ```shell
 export BUILDKIT_PROGRESS=plain
