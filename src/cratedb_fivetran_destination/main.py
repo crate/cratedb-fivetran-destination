@@ -7,18 +7,17 @@ from concurrent import futures
 import grpc
 import sqlalchemy as sa
 
-from cratedb_fivetran_destination.engine import AlterTableInplaceStatements, Processor
-from cratedb_fivetran_destination.model import (
+from src.cratedb_fivetran_destination.engine import AlterTableInplaceStatements, Processor
+from src.cratedb_fivetran_destination.model import (
     FieldMap,
     FivetranKnowledge,
     FivetranTable,
     TableInfo,
     TypeMap,
 )
-from cratedb_fivetran_destination.util import LOG_INFO, LOG_SEVERE, LOG_WARNING, log_message
+from src.cratedb_fivetran_destination import read_csv
+from src.cratedb_fivetran_destination.util import LOG_INFO, LOG_SEVERE, LOG_WARNING, log_message
 from fivetran_sdk import common_pb2, destination_sdk_pb2, destination_sdk_pb2_grpc
-
-from . import read_csv
 
 logger = logging.getLogger()
 

@@ -2,8 +2,8 @@ import logging
 
 import click
 
-from cratedb_fivetran_destination.main import start_server
-from cratedb_fivetran_destination.util import setup_logging
+from src.cratedb_fivetran_destination.main import start_server
+from src.cratedb_fivetran_destination.util import setup_logging
 
 logger = logging.getLogger()
 

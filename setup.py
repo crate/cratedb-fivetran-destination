@@ -19,11 +19,11 @@ class FivetranSdk(Command):
 
     ## Proto files
 
-    Partners should not add the proto files to their repos. Proto files should be pulled
+    Partners should not add the protos files to their repos. Proto files should be pulled
     in from this repo at build time and added to .gitignore so they are excluded.
 
-    Always use proto files from latest release and update your code if necessary. Older
-    releases proto files can be considered deprecated and will be expired at later date.
+    Always use protos files from latest release and update your code if necessary. Older
+    releases protos files can be considered deprecated and will be expired at later date.
 
     -- https://github.com/fivetran/fivetran_sdk/blob/main/development-guide.md#proto-files
     """
@@ -41,9 +41,9 @@ class FivetranSdk(Command):
 
         # Which protobuf schema files to acquire.
         self.proto_urls = [
-            f"https://raw.githubusercontent.com/fivetran/fivetran_sdk/{self.fivetran_sdk_tag}/common.proto",
-            f"https://raw.githubusercontent.com/fivetran/fivetran_sdk/{self.fivetran_sdk_tag}/connector_sdk.proto",
-            f"https://raw.githubusercontent.com/fivetran/fivetran_sdk/{self.fivetran_sdk_tag}/destination_sdk.proto",
+            f"https://raw.githubusercontent.com/fivetran/fivetran_sdk/{self.fivetran_sdk_tag}/common.protos",
+            f"https://raw.githubusercontent.com/fivetran/fivetran_sdk/{self.fivetran_sdk_tag}/connector_sdk.protos",
+            f"https://raw.githubusercontent.com/fivetran/fivetran_sdk/{self.fivetran_sdk_tag}/destination_sdk.protos",
         ]
 
     def finalize_options(self) -> None:
@@ -52,7 +52,7 @@ class FivetranSdk(Command):
 
     def get_source_files(self) -> "list[str]":
         if self.protos_path.is_dir():
-            return [str(path) for path in self.protos_path.glob("*.proto")]
+            return [str(path) for path in self.protos_path.glob("*.protos")]
         return []
 
     def download(self):
