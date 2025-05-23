@@ -5,8 +5,8 @@ import sqlalchemy as sa
 from attr import Factory
 from attrs import define
 from sqlalchemy_cratedb import ObjectType
-from tikray.util.dictx import OrderedDictX
 
+from cratedb_fivetran_destination.dictx import OrderedDictX
 from fivetran_sdk import common_pb2
 from fivetran_sdk.common_pb2 import DataType
 
@@ -26,7 +26,7 @@ class FieldMap:
     @classmethod
     def rename_keys(cls, record):
         """
-        Rename keys according to field map.
+        Rename keys according to the field map.
         """
         record = OrderedDictX(record)
         for key, value in cls.field_map.items():
