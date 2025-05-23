@@ -13,7 +13,7 @@ greenlet==3.2.1 ; (python_full_version < '3.14' and platform_machine == 'AMD64')
 grpcio==1.70.0
 grpcio-tools==1.70.0
 orjson==3.10.18
-protobuf==5.29.4
+protobuf==6.30.2
 pycparser==2.22 ; platform_python_implementation == 'PyPy'
 pycryptodome==3.22.0
 setuptools==80.1.0
