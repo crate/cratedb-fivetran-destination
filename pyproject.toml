@@ -78,7 +78,7 @@ dependencies = [
   "grpcio<1.71",
   "grpcio-tools<1.71",
   "protobuf<6.31",
-  "pycryptodome<3.23",
+  "pycryptodome<3.24",
   "sqlalchemy-cratedb==0.42.0.dev2",
   "toolz<2",
   "zstandard<0.24",

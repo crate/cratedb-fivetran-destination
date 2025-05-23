@@ -15,7 +15,7 @@ grpcio-tools==1.70.0
 orjson==3.10.18
 protobuf==5.29.4
 pycparser==2.22 ; platform_python_implementation == 'PyPy'
-pycryptodome==3.22.0
+pycryptodome==3.23.0
 setuptools==80.1.0
 soupsieve==2.7
 sqlalchemy==2.0.40
