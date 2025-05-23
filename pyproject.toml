@@ -193,7 +193,7 @@ describe-subst = "$Format:%(describe:tags,match=v*)$"
 [tool.poe.tasks]
 build-app = { cmd = "pyinstaller --name cratedb-fivetran-destination --onefile --strip src/cratedb_fivetran_destination/__main__.py" }
 build-pkg = { cmd = "python -m build" }
-build-requirements = { cmd = "uv export --format=requirements.txt", capture_stdout = "requirements.txt" }
+build-requirements = { cmd = "uv export --format=requirements.txt --no-annotate --no-hashes", capture_stdout = "requirements.txt" }
 check = [ "lint", "test" ]
 format = [
   { cmd = "ruff format ." },
