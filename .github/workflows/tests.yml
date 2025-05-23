@@ -61,7 +61,7 @@ jobs:
 
       - name: Run linters and software tests
         run: |
-          uv run poe check
+          poe check
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
