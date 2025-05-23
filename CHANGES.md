@@ -1,6 +1,8 @@
 # CrateDB Fivetran Destination Changelog
 
 ## Unreleased
+
+## v0.0.3 - 2025-05-23
 - Dependencies: Updated to `sqlalchemy-cratedb==0.42.0.dev2`
 - Build: Added target to generate `requirements.txt`, and added the generated file
 - CI: Stopped building OCI images and standalone artifacts
