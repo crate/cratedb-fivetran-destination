@@ -15,7 +15,7 @@ orjson==3.11.4
 protobuf==6.31.1
 pycparser==2.22 ; platform_python_implementation == 'PyPy'
 pycryptodome==3.23.0
-setuptools==80.8.0
+setuptools==80.9.0
 soupsieve==2.7
 sqlalchemy==2.0.44
 sqlalchemy-cratedb==0.42.0.dev2
