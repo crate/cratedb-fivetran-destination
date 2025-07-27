@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
-  "grpcio-tools<1.71",
+  "grpcio-tools<1.75",
   "setuptools>=42",
   "versioningit",
 ]
@@ -76,7 +76,7 @@ dependencies = [
   "click<9",
   "google<3.1",
   "grpcio<1.75",
-  "grpcio-tools<1.71",
+  "grpcio-tools<1.75",
   "protobuf<6.32",
   "pycryptodome<3.24",
   "sqlalchemy-cratedb==0.42.0.dev2",
