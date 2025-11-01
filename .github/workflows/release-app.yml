@@ -99,7 +99,7 @@ jobs:
     steps:
 
     - name: Download all artifacts
-      uses: actions/download-artifact@v5
+      uses: actions/download-artifact@v6
 
     - name: Display downloaded files
       run: ls -R
