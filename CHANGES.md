@@ -3,6 +3,7 @@
 ## Unreleased
 - Dependencies: Updated requirements across the board
 - Testing: Updated to `sdk-tester:2.25.1105.001`
+- Runtime: Updated Fivetran SDK to commit `18e037c`
 
 ## v0.0.3 - 2025-05-23
 - Dependencies: Updated to `sqlalchemy-cratedb==0.42.0.dev2`

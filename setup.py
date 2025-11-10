@@ -30,7 +30,7 @@ class FivetranSdk(Command):
 
     def initialize_options(self) -> None:
         # Version pinning by Git reference.
-        self.fivetran_sdk_tag = "b9492119b"
+        self.fivetran_sdk_tag = "18e037c"
 
         # Where the Python SDK API files will be generated.
         self.output_path = Path("src/fivetran_sdk")
