@@ -35,7 +35,7 @@ jobs:
           "ubuntu-latest",   # Intel
           # "windows-latest",  # Intel
         ]
-        python-version: ["3.11"]
+        python-version: ["3.13"]
       # TODO: Also build for Linux/ARM, because this platform gets more traction in datacenters.
       # - https://github.blog/changelog/2024-06-03-actions-arm-based-linux-and-windows-runners-are-now-in-public-beta/
       # - https://arm-software.github.io/AVH/main/infrastructure/html/avh_gh.html
