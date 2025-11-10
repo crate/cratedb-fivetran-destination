@@ -11,21 +11,22 @@ from setuptools.command.build import build
 class FivetranSdk(Command):
     """
     ## About
+    Wrap the Fivetran SDK into the package.
+    -- https://github.com/fivetran/fivetran_partner_sdk
 
-    Fivetran SDK uses gRPC to talk to partner code. The partner side of the interface is
+    ## Details
+    The Fivetran SDK uses gRPC to talk to partner code. The partner side of the interface is
     always the server side. Fivetran implements the client side and initiates the requests.
 
-    Python SDK API code needs to be produced from protobuf schema files.
-
     ## Proto files
-
+    Python SDK API code needs to be produced from protobuf schema files.
     Partners should not add the proto files to their repos. Proto files should be pulled
-    in from this repo at build time and added to .gitignore so they are excluded.
+    in from this repo at build time and added to `.gitignore` so they are excluded.
 
-    Always use proto files from latest release and update your code if necessary. Older
-    releases proto files can be considered deprecated and will be expired at later date.
+    Always use proto files from the latest release and update your code if necessary. Older
+    releases proto files can be considered deprecated and will be expired at a later date.
 
-    -- https://github.com/fivetran/fivetran_sdk/blob/main/development-guide.md#proto-files
+    -- https://github.com/fivetran/fivetran_partner_sdk/blob/main/development-guide/development-guide.md#proto-files
     """
 
     def initialize_options(self) -> None:
