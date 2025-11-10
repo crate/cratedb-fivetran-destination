@@ -2,6 +2,8 @@
 
 ## Unreleased
 - Dependencies: Updated requirements across the board
+- Removed workaround for `_`-prefixed column names.
+  The package now requires CrateDB 6.2 or higher.
 
 ## v0.0.3 - 2025-05-23
 - Dependencies: Updated to `sqlalchemy-cratedb==0.42.0.dev2`

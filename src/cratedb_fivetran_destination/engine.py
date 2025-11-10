@@ -6,7 +6,7 @@ from attr import Factory
 from attrs import define
 from toolz import dissoc
 
-from cratedb_fivetran_destination.model import FieldMap, SqlBag, TableInfo, TypeMap
+from cratedb_fivetran_destination.model import SqlBag, TableInfo, TypeMap
 from fivetran_sdk import common_pb2
 
 logger = logging.getLogger()
@@ -112,7 +112,7 @@ class AlterTableInplaceStatements:
         # Translate "columns changed" instructions into migration operation
         # based on altering and copying using `UPDATE ... SET ...`.
         for column in self.columns_changed:
-            column_name = FieldMap.to_cratedb(column.name)
+            column_name = column.name
             column_name_temporary = column_name + "_alter_tmp"
             type_ = TypeMap.to_cratedb(column.type, column.params)
             sqlbag.add(
@@ -137,7 +137,7 @@ class AlterTableInplaceStatements:
 
     @staticmethod
     def column_definition(column):
-        field = FieldMap.to_cratedb(column.name)
+        field = column.name
         type_ = TypeMap.to_cratedb(column.type, column.params)
         return f"{field} {type_}"
 

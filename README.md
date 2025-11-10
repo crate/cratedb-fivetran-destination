@@ -36,7 +36,7 @@ This project and repository provides:
 
 - The source code of the `cratedb-fivetran-destination` package, which implements
   the [CrateDB destination adapter for Fivetran]. It works with both [CrateDB] and
-  [CrateDB Cloud].
+  [CrateDB Cloud]. Operating the package successfully needs CrateDB 6.2 or higher.
 
 - The public [issue tracker] for this project. Please use it
   to report problems, and stay informed about their resolutions.
