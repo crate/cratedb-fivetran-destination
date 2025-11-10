@@ -21,7 +21,7 @@ jobs:
         os: ['ubuntu-22.04']
         python-version: [
           '3.9',
-          '3.12',
+          '3.13',
         ]
         cratedb-version: ['nightly']
 
