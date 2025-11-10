@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
-  "grpcio-tools<1.75",
+  "grpcio-tools<1.77",
   "setuptools>=42",
   "versioningit",
 ]
