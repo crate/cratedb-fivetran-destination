@@ -1,6 +1,7 @@
 # CrateDB Fivetran Destination Changelog
 
 ## Unreleased
+- Dependencies: Updated requirements across the board
 
 ## v0.0.3 - 2025-05-23
 - Dependencies: Updated to `sqlalchemy-cratedb==0.42.0.dev2`
