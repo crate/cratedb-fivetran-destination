@@ -35,7 +35,7 @@ def services(request):
     processes = []
 
     oci_image = (
-        "us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:2.25.0131.001"
+        "us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:2.25.1105.001"
     )
     run("gcloud auth configure-docker us-docker.pkg.dev")
     run(f"docker pull {oci_image}")
