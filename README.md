@@ -42,8 +42,8 @@ This project and repository provides:
 
 ## Status
 
-The status of this software is to be considered work-in-progress,
-i.e. pre-alpha.
+The software is currently in beta status. We welcome any problem reports
+to improve quality and fix bugs.
 
 ## Usage
 
