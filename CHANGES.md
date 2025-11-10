@@ -8,6 +8,8 @@
 - Testing: Skipped live mode integration test, the feature has
   been put [on hold][live mode pause] by Fivetran.
 - Dependencies: Updated to grpcio==1.78.*
+- Model: Removed workaround for `_`-prefixed column names.
+  The package now requires CrateDB 6.2 or higher.
 
 [live mode pause]: https://github.com/crate/cratedb-fivetran-destination/issues/148
 
