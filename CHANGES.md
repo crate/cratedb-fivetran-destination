@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Removed workaround for `_`-prefixed column names.
+  The package now requires CrateDB 6.2 or higher.
+
 ## v0.0.4 - 2026-01-23
 
 ### Features

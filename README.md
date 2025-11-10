@@ -9,6 +9,7 @@
 [![Coverage][badge-coverage]][project-coverage]
 [![Status][badge-status]][project-pypi]
 [![Supported Python versions][badge-python-versions]][project-pypi]
+[![Supported CrateDB versions][badge-cratedb-versions]][project-cratedb]
 
 » [Documentation]
 | [Changelog]
@@ -35,7 +36,7 @@ This project and repository provides:
 
 - The source code of the `cratedb-fivetran-destination` package, which implements
   the [CrateDB destination adapter for Fivetran]. It works with both [CrateDB] and
-  [CrateDB Cloud].
+  [CrateDB Cloud]. Operating the package successfully needs CrateDB 6.2 or higher.
 
 - The public [issue tracker] for this project. Please use it
   to report problems, and stay informed about their resolutions.
@@ -92,6 +93,7 @@ The project uses the Apache license, like CrateDB itself.
 
 [badge-ci]: https://github.com/crate/cratedb-fivetran-destination/actions/workflows/tests.yml/badge.svg
 [badge-coverage]: https://codecov.io/gh/crate/cratedb-fivetran-destination/branch/main/graph/badge.svg
+[badge-cratedb-versions]: https://img.shields.io/badge/CrateDB-6.2+-blue.svg
 [badge-downloads-per-month]: https://pepy.tech/badge/cratedb-fivetran-destination/month
 [badge-license]: https://img.shields.io/github/license/crate/cratedb-fivetran-destination.svg
 [badge-package-version]: https://img.shields.io/pypi/v/cratedb-fivetran-destination.svg
@@ -100,6 +102,7 @@ The project uses the Apache license, like CrateDB itself.
 [badge-status]: https://img.shields.io/pypi/status/cratedb-fivetran-destination.svg
 [project-ci]: https://github.com/crate/cratedb-fivetran-destination/actions/workflows/tests.yml
 [project-coverage]: https://app.codecov.io/gh/crate/cratedb-fivetran-destination
+[project-cratedb]: https://github.com/crate/crate
 [project-downloads]: https://pepy.tech/project/cratedb-fivetran-destination/
 [project-license]: https://github.com/crate/cratedb-fivetran-destination/blob/main/LICENSE
 [project-pypi]: https://pypi.org/project/cratedb-fivetran-destination
