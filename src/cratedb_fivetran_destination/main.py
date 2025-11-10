@@ -9,7 +9,6 @@ import sqlalchemy as sa
 
 from cratedb_fivetran_destination.engine import AlterTableInplaceStatements, Processor
 from cratedb_fivetran_destination.model import (
-    FieldMap,
     FivetranKnowledge,
     FivetranTable,
     TableInfo,
@@ -83,7 +82,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         fivetran_column: common_pb2.Column
         for fivetran_column in request.table.columns:
             db_column: sa.Column = sa.Column()
-            db_column.name = FieldMap.to_cratedb(fivetran_column.name)
+            db_column.name = fivetran_column.name
             db_column.type = TypeMap.to_cratedb(fivetran_column.type)
             db_column.primary_key = fivetran_column.primary_key
             if db_column.primary_key:
@@ -92,8 +91,8 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             # db_column.params(fivetran_column.params)  # noqa: ERA001
             table.append_column(db_column)
 
-        # Need to add the `__fivetran_deleted` column manually?
-        col: sa.Column = sa.Column(name="__fivetran_deleted")
+        # Need to add the `_fivetran_deleted` column manually? Why?
+        col: sa.Column = sa.Column(name="_fivetran_deleted")
         col.type = sa.Boolean()
         table.append_column(col)
 
@@ -238,7 +237,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         sa_column: sa.Column
         for sa_column in sa_table.columns:
             ft_column = common_pb2.Column(
-                name=FieldMap.to_fivetran(sa_column.name),
+                name=sa_column.name,
                 type=TypeMap.to_fivetran(sa_column.type),
                 primary_key=sa_column.primary_key,
             )
@@ -261,7 +260,6 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             logger.info(f"Decrypting file: {filename}")
             for record in read_csv.decrypt_file(filename, value):
                 # Rename keys according to field map.
-                record = FieldMap.rename_keys(record)
                 FivetranKnowledge.replace_values(record)
                 yield record
 
