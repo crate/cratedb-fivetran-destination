@@ -455,16 +455,16 @@ def test_api_migrate_add_column_in_history_mode_operation_timestamp_wrong(engine
             sa.text("""
         CREATE TABLE testdrive.foo (
             id INT,
-            "__fivetran_synced" TIMESTAMP WITHOUT TIME ZONE,
-            "__fivetran_start" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-            "__fivetran_end" TIMESTAMP WITHOUT TIME ZONE,
-            "__fivetran_active" BOOLEAN
+            "_fivetran_synced" TIMESTAMP WITHOUT TIME ZONE,
+            "_fivetran_start" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+            "_fivetran_end" TIMESTAMP WITHOUT TIME ZONE,
+            "_fivetran_active" BOOLEAN
         )
         """)
         )
         conn.execute(
             sa.text("""
-        INSERT INTO testdrive.foo (id, __fivetran_start, __fivetran_active)
+        INSERT INTO testdrive.foo (id, _fivetran_start, _fivetran_active)
         VALUES (42, '2005-05-24T20:57:00Z', TRUE);
         """)
         )
@@ -511,16 +511,16 @@ def test_api_migrate_drop_column_in_history_mode_operation_timestamp_wrong(engin
             sa.text("""
         CREATE TABLE testdrive.foo (
             id INT,
-            "__fivetran_synced" TIMESTAMP WITHOUT TIME ZONE,
-            "__fivetran_start" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
-            "__fivetran_end" TIMESTAMP WITHOUT TIME ZONE,
-            "__fivetran_active" BOOLEAN
+            "_fivetran_synced" TIMESTAMP WITHOUT TIME ZONE,
+            "_fivetran_start" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+            "_fivetran_end" TIMESTAMP WITHOUT TIME ZONE,
+            "_fivetran_active" BOOLEAN
         )
         """)
         )
         conn.execute(
             sa.text("""
-        INSERT INTO testdrive.foo (id, __fivetran_start, __fivetran_active)
+        INSERT INTO testdrive.foo (id, _fivetran_start, _fivetran_active)
         VALUES (42, '2005-05-24T20:57:00Z', TRUE);
         """)
         )
