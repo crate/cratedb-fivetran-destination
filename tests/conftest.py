@@ -4,4 +4,6 @@ import sqlalchemy as sa
 
 @pytest.fixture
 def engine():
-    return sa.create_engine("crate://")
+    engine = sa.create_engine("crate://")
+    yield engine
+    engine.dispose()

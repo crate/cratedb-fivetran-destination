@@ -68,13 +68,13 @@ def services(request):
 
     yield
 
-    # Terminate gRPC server.
-    server.stop(grace=3.0)
-
     # Terminate processes again.
     for proc in processes:
         proc.terminate()
         proc.wait(3)
+
+    # Terminate gRPC server.
+    server.stop(grace=3.0)
 
 
 # The record that is inserted into the database.

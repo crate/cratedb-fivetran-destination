@@ -45,7 +45,7 @@ Start CrateDB.
 ```shell
 docker run --rm \
   --publish=4200:4200 --publish=5432:5432 --env=CRATE_HEAP_SIZE=2g \
-  crate:latest -Cdiscovery.type=single-node
+  crate:latest '-Cdiscovery.type=single-node'
 ```
 
 Start gRPC destination server.
