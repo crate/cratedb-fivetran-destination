@@ -276,7 +276,7 @@ def test_api_alter_table_change_primary_key_name(engine, capsys):
     # Invoke gRPC API method under test.
     table: common_pb2.Table = common_pb2.Table(name="foo")
     column: common_pb2.Column = common_pb2.Column(
-        name="identfier",
+        name="identifier",
         type=common_pb2.DataType.INT,
         primary_key=True,
     )

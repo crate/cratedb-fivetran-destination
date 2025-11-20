@@ -9,6 +9,8 @@ import sqlalchemy as sa
 from sqlalchemy.sql.type_api import UserDefinedType
 from sqlalchemy_cratedb import ObjectType
 
+pytestmark = pytest.mark.sdktester
+
 
 def run(command: str, background: bool = False):
     if background:
@@ -21,8 +23,13 @@ def run(command: str, background: bool = False):
 def reset_tables(engine):
     with engine.connect() as connection:
         connection.execute(sa.text("DROP TABLE IF EXISTS tester.all_types"))
+        connection.execute(sa.text("DROP TABLE IF EXISTS tester.all_types_alter_tmp"))
         connection.execute(sa.text("DROP TABLE IF EXISTS tester.campaign"))
+        connection.execute(sa.text("DROP TABLE IF EXISTS tester.campaign_alter_tmp"))
+        connection.execute(sa.text("DROP TABLE IF EXISTS tester.composite_table"))
+        connection.execute(sa.text("DROP TABLE IF EXISTS tester.composite_table_alter_tmp"))
         connection.execute(sa.text("DROP TABLE IF EXISTS tester.transaction"))
+        connection.execute(sa.text("DROP TABLE IF EXISTS tester.transaction_alter_tmp"))
 
 
 @pytest.fixture()
@@ -102,7 +109,7 @@ RECORD_REFERENCE = dict(  # noqa: C408
 
 
 @pytest.mark.parametrize("services", ["./tests/data/fivetran_canonical"], indirect=True)
-def test_integration_fivetran(capfd, services, engine):
+def test_integration_fivetran(capfd, services):
     """
     Verify the Fivetran destination tester runs to completion with Fivetran test data.
     """
@@ -111,11 +118,12 @@ def test_integration_fivetran(capfd, services, engine):
     out, err = capfd.readouterr()
 
     # "Truncate" is the last software test invoked by the Fivetran destination tester.
-    # If the test case receives corresponding log output, it is considered to be complete.
+    # If the test case receives the corresponding log output, it is considered to be complete.
     assert "Create Table succeeded: transaction" in err
+    assert "Updating definition for table: transaction" in err
     assert "Alter Table succeeded: transaction" in err
     assert "WriteBatch succeeded: transaction" in err
-    assert "Truncate succeeded: transaction" in err
+    assert "Describe Table: transaction" in err
 
     assert "Create Table succeeded: campaign" in err
     assert "WriteBatch succeeded: campaign" in err
@@ -179,6 +187,6 @@ def test_integration_cratedb(capfd, services, engine):
     # Read out stdout and stderr.
     out, err = capfd.readouterr()
 
-    # If the test case receives corresponding log output, it is considered to be complete.
+    # If the test case receives the corresponding log output, it is considered to be complete.
     assert "Create Table succeeded: all_types" in err
     assert "WriteBatch succeeded: all_types" in err
