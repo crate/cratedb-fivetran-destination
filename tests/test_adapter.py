@@ -39,7 +39,7 @@ def test_api_test(capsys):
 
     # Check log output.
     out, err = capsys.readouterr()
-    assert out == format_log_message("Test database connection: foo", newline=True)
+    assert format_log_message("Test database connection: foo", newline=True) in out
 
 
 def test_api_configuration_form(capsys):
@@ -252,13 +252,16 @@ def test_api_alter_table_change_primary_key_type(engine, capsys):
     )
 
     # Validate outcome.
-    assert response.success is False
-    assert "this operation is not implemented yet" in response.warning.message
+    assert response.success is True
 
     # Check log output.
     out, err = capsys.readouterr()
-    # assert out == format_log_message("AlterTable: Successfully altered table: ", newline=True)  # noqa: E501, ERA001
-    assert "this operation is not implemented yet" in out
+    assert (
+        format_log_message(
+            'AlterTable: Successfully altered table: "testdrive"."foo"', newline=True
+        )
+        in out
+    )
 
 
 def test_api_alter_table_change_primary_key_name(engine, capsys):
@@ -290,13 +293,16 @@ def test_api_alter_table_change_primary_key_name(engine, capsys):
     )
 
     # Validate outcome.
-    assert response.success is False
-    assert "this operation is not implemented yet" in response.warning.message
+    assert response.success is True
 
     # Check log output.
     out, err = capsys.readouterr()
-    # assert out == format_log_message("AlterTable: Successfully altered table: ", newline=True)  # noqa: E501, ERA001
-    assert "this operation is not implemented yet" in out
+    assert (
+        format_log_message(
+            'AlterTable: Successfully altered table: "testdrive"."foo"', newline=True
+        )
+        in out
+    )
 
 
 def test_processor_failing(engine):

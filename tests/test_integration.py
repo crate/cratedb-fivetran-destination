@@ -104,7 +104,6 @@ RECORD_REFERENCE = dict(  # noqa: C408
     naive_time=86400000,
     __fivetran_synced=mock.ANY,
     __fivetran_id="zyx-987-abc",
-    __fivetran_deleted=None,
 )
 
 
@@ -129,6 +128,13 @@ def test_integration_fivetran(capfd, services):
     assert "WriteBatch succeeded: campaign" in err
     assert "Truncate succeeded: campaign" in err
     assert "Hard Truncate succeeded: campaign" in err
+
+    assert "Create Table succeeded: composite_table" in err
+    assert "Updating definition for table: composite_table" in err
+    assert "Alter Table succeeded: composite_table" in err
+    assert "WriteBatch succeeded: composite_table" in err
+    assert "Truncating: composite_table" in err
+    assert "Truncate succeeded: composite_table" in err
 
 
 @pytest.mark.parametrize("services", ["./tests/data/cratedb_canonical"], indirect=True)
