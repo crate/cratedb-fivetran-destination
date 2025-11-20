@@ -7,15 +7,20 @@ from concurrent import futures
 import grpc
 import sqlalchemy as sa
 
-from cratedb_fivetran_destination.engine import AlterTableInplaceStatements, Processor
+from cratedb_fivetran_destination.engine import (
+    AlterTableInplaceStatements,
+    AlterTableRecreateStatements,
+    Processor,
+)
 from cratedb_fivetran_destination.model import (
     FieldMap,
     FivetranKnowledge,
     FivetranTable,
+    TableAddress,
     TableInfo,
     TypeMap,
 )
-from cratedb_fivetran_destination.util import LOG_INFO, LOG_SEVERE, LOG_WARNING, log_message
+from cratedb_fivetran_destination.util import LOG_INFO, LOG_WARNING, log_message
 from fivetran_sdk import common_pb2, destination_sdk_pb2, destination_sdk_pb2_grpc
 
 from . import read_csv
@@ -79,25 +84,11 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             + " | "
             + str(request.table.columns)
         )
-        table = sa.Table(request.table.name, self.metadata, schema=request.schema_name)
-        fivetran_column: common_pb2.Column
-        for fivetran_column in request.table.columns:
-            db_column: sa.Column = sa.Column()
-            db_column.name = FieldMap.to_cratedb(fivetran_column.name)
-            db_column.type = TypeMap.to_cratedb(fivetran_column.type)
-            db_column.primary_key = fivetran_column.primary_key
-            if db_column.primary_key:
-                db_column.nullable = False
-            # TODO: Which kind of parameters are relayed by Fivetran here?
-            # db_column.params(fivetran_column.params)  # noqa: ERA001
-            table.append_column(db_column)
-
-        # Need to add the `__fivetran_deleted` column manually?
-        col: sa.Column = sa.Column(name="__fivetran_deleted")
-        col.type = sa.Boolean()
-        table.append_column(col)
-
-        table.create(self.engine)
+        self._create_table(
+            schema_name=request.schema_name,
+            table_name=request.table.name,
+            fivetran_columns=request.table.columns,
+        )
         return destination_sdk_pb2.CreateTableResponse(success=True)
 
     def AlterTable(self, request, context):
@@ -153,33 +144,36 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
                 "Alter table intends to change the primary key of the table. "
                 "Because CrateDB does not support this operation, the table will be recreated.",
             )
-            # FIXME: Implement non-inplace ALTER TABLE for primary key updates.
-            """
+
+            # TODO: Refactor this _into_ the `AlterTableRecreateStatements` workhorse function.
+            temptable = request.table.name + "_alter_tmp"
+            self._create_table(
+                schema_name=request.schema_name,
+                table_name=temptable,
+                fivetran_columns=request.table.columns,
+            )
             ats = AlterTableRecreateStatements(
-                table=table_info, table_new=new_table, columns_common=columns_common
-            )
-            """
-            msg = (
-                "Alter table intends to change the primary key of the table, "
-                "but this operation is not implemented yet"
-            )
-            log_message(LOG_SEVERE, f"AlterTable: {msg}")
-            return destination_sdk_pb2.AlterTableResponse(
-                success=False,
-                warning=common_pb2.Warning(message=msg),
-            )
-        ats = AlterTableInplaceStatements(
-            table=table_info, columns_new=columns_new, columns_changed=columns_changed
-        )
-        with self.engine.connect() as connection:
-            stmts = ats.to_sql()
-            if stmts:
-                stmts.execute(connection)
+                address_effective=TableAddress(
+                    schema_name=request.schema_name, table_name=request.table.name
+                ),
+                address_temporary=TableAddress(
+                    schema_name=request.schema_name, table_name=temptable
+                ),
+                columns_old=old_table.columns,
+                columns_new=new_table.columns,
+            ).to_sql()
+        else:
+            ats = AlterTableInplaceStatements(
+                table=table_info, columns_new=columns_new, columns_changed=columns_changed
+            ).to_sql()
+        if ats:
+            with self.engine.connect() as connection:
+                ats.execute(connection)
                 log_message(
                     LOG_INFO, f"AlterTable: Successfully altered table: {table_info.fullname}"
                 )
-            else:
-                log_message(LOG_INFO, "AlterTable: Nothing changed")
+        else:
+            log_message(LOG_INFO, "AlterTable: Nothing changed")
 
         return destination_sdk_pb2.AlterTableResponse(success=True)
 
@@ -246,9 +240,15 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         log_message(LOG_INFO, f"Completed fetching table info: {table}")
         return destination_sdk_pb2.DescribeTableResponse(not_found=False, table=table)
 
+    def WriteHistoryBatch(self, request, context):
+        """
+        TODO: Implement method for real.
+        """
+        return destination_sdk_pb2.WriteBatchResponse(success=True)
+
     def _configure_database(self, url):
         if not self.engine:
-            self.engine = sa.create_engine(url)
+            self.engine = sa.create_engine(url, echo=True)
             self.processor = Processor(engine=self.engine)
 
     @staticmethod
@@ -271,7 +271,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         """
         return sa.Table(
             table,
-            self.metadata,
+            sa.MetaData(),
             schema=schema,
             quote_schema=True,
             autoload_with=self.engine,
@@ -284,6 +284,13 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         table = self._reflect_table(schema=request.schema_name, table=request.table.name)
         primary_keys = [column.name for column in table.primary_key.columns]
         return TableInfo(fullname=self.table_fullname(request), primary_keys=primary_keys)
+
+    def _table_info_from_fivetran(self, table: common_pb2.Table) -> TableInfo:  # pragma: nocover
+        """
+        Compute TableInfo data.
+        """
+        primary_keys = [column.name for column in table.columns if column.primary_key]
+        return TableInfo(fullname=table.name, primary_keys=primary_keys)
 
     @staticmethod
     def table_name(request):
@@ -300,6 +307,25 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         """
         table_name = self.table_name(request)
         return f'"{request.schema_name}"."{table_name}"'
+
+    def _create_table(
+        self, schema_name: str, table_name: str, fivetran_columns: t.List[common_pb2.Column]
+    ) -> sa.Table:
+        table = sa.Table(table_name, self.metadata, schema=schema_name)
+        fivetran_column: common_pb2.Column
+        for fivetran_column in fivetran_columns:
+            db_column: sa.Column = sa.Column()
+            db_column.name = FieldMap.to_cratedb(fivetran_column.name)
+            db_column.type = TypeMap.to_cratedb(fivetran_column.type)
+            db_column.primary_key = fivetran_column.primary_key
+            if db_column.primary_key:
+                db_column.nullable = False
+            # TODO: Which kind of parameters are relayed by Fivetran here?
+            # db_column.params(fivetran_column.params)  # noqa: ERA001
+            table.append_column(db_column, replace_existing=True)
+
+        table.create(self.engine)
+        return table
 
 
 def start_server(host: str = "[::]", port: int = 50052, max_workers: int = 1) -> grpc.Server:

@@ -20,6 +20,9 @@ class FieldMap:
     field_map = {
         "_fivetran_id": "__fivetran_id",
         "_fivetran_synced": "__fivetran_synced",
+        "_fivetran_start": "__fivetran_start",
+        "_fivetran_end": "__fivetran_end",
+        "_fivetran_active": "__fivetran_active",
         "_fivetran_deleted": "__fivetran_deleted",
     }
 
@@ -50,6 +53,12 @@ class FieldMap:
         reverse_map = dict(zip(cls.field_map.values(), cls.field_map.keys()))
         return reverse_map.get(cratedb_field, cratedb_field)
 
+    @classmethod
+    def adjust_sql(cls, sql: str) -> str:
+        for key, value in cls.field_map.items():
+            sql = sql.replace(key, value)
+        return sql
+
 
 class TypeMap:
     """
@@ -67,10 +76,13 @@ class TypeMap:
         DataType.LONG: sa.BigInteger(),
         DataType.FLOAT: sa.Float(),
         DataType.DOUBLE: sa.Double(),
-        DataType.NAIVE_DATE: sa.Date(),
+        # CrateDB can not store `DATE` types, so converge to `TIMESTAMP`.
+        DataType.NAIVE_DATE: sa.TIMESTAMP(),
         DataType.NAIVE_DATETIME: sa.TIMESTAMP(),
         DataType.UTC_DATETIME: sa.TIMESTAMP(),
-        DataType.DECIMAL: sa.DECIMAL(),
+        # TODO: The parameters are coming from the API, here `input_fivetran.json`.
+        #       How to loop them into this type resolution machinery?
+        DataType.DECIMAL: sa.DECIMAL(6, 3),
         DataType.BINARY: sa.Text(),
         DataType.STRING: sa.String(),
         DataType.JSON: ObjectType,
@@ -156,6 +168,20 @@ class TableInfo:
 
     fullname: str
     primary_keys: t.List[str] = Factory(list)
+
+
+@define
+class TableAddress:
+    """
+    Manage the location of a database table.
+    """
+
+    schema_name: str
+    table_name: str
+
+    @property
+    def fullname(self) -> str:
+        return f'''"{self.schema_name}"."{self.table_name}"'''
 
 
 @define
