@@ -248,7 +248,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
     def _configure_database(self, url):
         if not self.engine:
-            self.engine = sa.create_engine(url, echo=True)
+            self.engine = sa.create_engine(url, echo=False)
             self.processor = Processor(engine=self.engine)
 
     @staticmethod
@@ -314,12 +314,14 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         table = sa.Table(table_name, self.metadata, schema=schema_name)
         fivetran_column: common_pb2.Column
         for fivetran_column in fivetran_columns:
-            db_column: sa.Column = sa.Column()
-            db_column.name = FieldMap.to_cratedb(fivetran_column.name)
-            db_column.type = TypeMap.to_cratedb(fivetran_column.type)
-            db_column.primary_key = fivetran_column.primary_key
-            if db_column.primary_key:
-                db_column.nullable = False
+            name = FieldMap.to_cratedb(fivetran_column.name)
+            type_ = TypeMap.to_cratedb(fivetran_column.type, fivetran_column.params)
+            db_column = sa.Column(
+                name,
+                type_,
+                primary_key=fivetran_column.primary_key,
+                nullable=not fivetran_column.primary_key,
+            )
             # TODO: Which kind of parameters are relayed by Fivetran here?
             # db_column.params(fivetran_column.params)  # noqa: ERA001
             table.append_column(db_column, replace_existing=True)

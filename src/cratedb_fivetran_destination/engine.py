@@ -163,12 +163,12 @@ class AlterTableRecreateStatements:
         table_temp = self.address_temporary.fullname
 
         sqlbag.add(
-            FieldMap.adjust_sql(f"""
+            f"""
         INSERT INTO
             {table_temp}
-            ({", ".join([f'"{col.name}"' for col in self.columns_new])})
-            (SELECT {", ".join([f'"{col.name}"' for col in self.columns_old])} FROM {table_real})
-        """)  # noqa: S608
+            ({", ".join([f'"{FieldMap.to_cratedb(col.name)}"' for col in self.columns_new])})
+            (SELECT {", ".join([f'"{FieldMap.to_cratedb(col.name)}"' for col in self.columns_old])} FROM {table_real})
+        """  # noqa: S608, E501
         )
         sqlbag.add(f"ALTER CLUSTER SWAP TABLE {table_temp} TO {table_real}")
         sqlbag.add(f"DROP TABLE {table_temp}")

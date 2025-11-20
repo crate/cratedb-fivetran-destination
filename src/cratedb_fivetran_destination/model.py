@@ -53,12 +53,6 @@ class FieldMap:
         reverse_map = dict(zip(cls.field_map.values(), cls.field_map.keys()))
         return reverse_map.get(cratedb_field, cratedb_field)
 
-    @classmethod
-    def adjust_sql(cls, sql: str) -> str:
-        for key, value in cls.field_map.items():
-            sql = sql.replace(key, value)
-        return sql
-
 
 class TypeMap:
     """
