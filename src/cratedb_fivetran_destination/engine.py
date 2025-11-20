@@ -6,7 +6,7 @@ from attr import Factory
 from attrs import define
 from toolz import dissoc
 
-from cratedb_fivetran_destination.model import FieldMap, SqlBag, TableInfo, TypeMap
+from cratedb_fivetran_destination.model import FieldMap, SqlBag, TableAddress, TableInfo, TypeMap
 from fivetran_sdk import common_pb2
 
 logger = logging.getLogger()
@@ -140,6 +140,39 @@ class AlterTableInplaceStatements:
         field = FieldMap.to_cratedb(column.name)
         type_ = TypeMap.to_cratedb(column.type, column.params)
         return f"{field} {type_}"
+
+
+@define
+class AlterTableRecreateStatements:
+    """
+    Manage and render a procedure of SQL statements for recreating a table with a new schema.
+
+    The procedure will create a new table, transfer data, and swap tables.
+    It is needed for propagating primary key column changes.
+    """
+
+    address_effective: TableAddress
+    address_temporary: TableAddress
+    columns_old: t.List[common_pb2.Column] = Factory(list)
+    columns_new: t.List[common_pb2.Column] = Factory(list)
+
+    def to_sql(self) -> SqlBag:
+        sqlbag = SqlBag()
+
+        table_real = self.address_effective.fullname
+        table_temp = self.address_temporary.fullname
+
+        sqlbag.add(
+            FieldMap.adjust_sql(f"""
+        INSERT INTO
+            {table_temp}
+            ({", ".join([f'"{col.name}"' for col in self.columns_new])})
+            (SELECT {", ".join([f'"{col.name}"' for col in self.columns_old])} FROM {table_real})
+        """)  # noqa: S608
+        )
+        sqlbag.add(f"ALTER CLUSTER SWAP TABLE {table_temp} TO {table_real}")
+        sqlbag.add(f"DROP TABLE {table_temp}")
+        return sqlbag
 
 
 @define
