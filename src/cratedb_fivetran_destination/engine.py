@@ -162,6 +162,9 @@ class AlterTableRecreateStatements:
         table_real = self.address_effective.fullname
         table_temp = self.address_temporary.fullname
 
+        # Put the source table into read-only mode at the beginning of the following operations.
+        sqlbag.add(f'ALTER TABLE {table_real} SET ("blocks.write"=true);')
+
         # Define transform operation involving a temporary table copy and swap.
         sqlbag.add(
             f"""
@@ -171,6 +174,10 @@ class AlterTableRecreateStatements:
             (SELECT {", ".join([f'"{FieldMap.to_cratedb(col.name)}"' for col in self.columns_old])} FROM {table_real})
         """  # noqa: S608, E501
         )
+
+        # Put the source table into read+write mode again,
+        # and replace it with the new newly populated temporary table.
+        sqlbag.add(f'ALTER TABLE {table_real} SET ("blocks.write"=false);')
         sqlbag.add(f"ALTER CLUSTER SWAP TABLE {table_temp} TO {table_real}")
 
         # Drop the temporary table.

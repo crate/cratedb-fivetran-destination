@@ -46,6 +46,20 @@ GA releases, covering in many situations of the development cycle.
 Please use container image tags appropriately when aiming for version pinning.
 The first GA release will be `cratedb-fivetran-destination:0.0.1`.
 
+## Caveats
+
+:AlterTableRecreateStatements:
+
+  When the adapter processes schema changes that involve amendments to primary
+  keys, it needs to re-create the destination table and copy over all the
+  data on behalf of a temporary table that will get swapped in after being
+  populated. While the copy operation is taking place, the original table
+  will block any writes, to avoid data loss.
+  However, shortly before the table swap, to complete the operation, the
+  adapter needs to release the write block: At this point in time,
+  before completing the swap operation, CrateDB may accept writes to
+  the original table before swapping it out, which may lead to data loss.
+
 
 [^uv]: We recommend to use the [uv] package manager, but it also works without.
 
