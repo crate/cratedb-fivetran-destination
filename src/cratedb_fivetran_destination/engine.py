@@ -162,6 +162,7 @@ class AlterTableRecreateStatements:
         table_real = self.address_effective.fullname
         table_temp = self.address_temporary.fullname
 
+        # Define transform operation involving a temporary table copy and swap.
         sqlbag.add(
             f"""
         INSERT INTO
@@ -171,7 +172,10 @@ class AlterTableRecreateStatements:
         """  # noqa: S608, E501
         )
         sqlbag.add(f"ALTER CLUSTER SWAP TABLE {table_temp} TO {table_real}")
+
+        # Drop the temporary table.
         sqlbag.add(f"DROP TABLE {table_temp}")
+
         return sqlbag
 
 
