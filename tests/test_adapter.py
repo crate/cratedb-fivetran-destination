@@ -80,7 +80,6 @@ def test_api_describe_table_found(engine, capsys):
     destination = CrateDBDestinationImpl()
 
     with engine.connect() as conn:
-        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
         conn.execute(sa.text("CREATE TABLE testdrive.foo (id INT)"))
 
     # Invoke gRPC API method under test.
@@ -150,7 +149,6 @@ def test_api_alter_table_add_column(engine, capsys):
     destination = CrateDBDestinationImpl()
 
     with engine.connect() as conn:
-        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
         conn.execute(sa.text("CREATE TABLE testdrive.foo (id INT)"))
 
     # Invoke gRPC API method under test.
@@ -192,7 +190,6 @@ def test_api_alter_table_nothing_changed(engine, capsys):
     destination = CrateDBDestinationImpl()
 
     with engine.connect() as conn:
-        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
         conn.execute(sa.text("CREATE TABLE testdrive.foo (id INT)"))
 
     # Invoke gRPC API method under test.
@@ -232,7 +229,6 @@ def test_api_alter_table_change_primary_key_type(engine, capsys):
     destination = CrateDBDestinationImpl()
 
     with engine.connect() as conn:
-        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
         conn.execute(sa.text("CREATE TABLE testdrive.foo (id INT PRIMARY KEY)"))
 
     # Invoke gRPC API method under test.
@@ -273,7 +269,6 @@ def test_api_alter_table_change_primary_key_name(engine, capsys):
     destination = CrateDBDestinationImpl()
 
     with engine.connect() as conn:
-        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
         conn.execute(sa.text("CREATE TABLE testdrive.foo (id INT PRIMARY KEY)"))
 
     # Invoke gRPC API method under test.
