@@ -38,13 +38,16 @@ error getting credentials - err: exit status 1, out: `You do not currently have 
 
 Run tests selectively.
 ```shell
-pytest -vvv tests/test_foo.py tests/test_examples.py
+pytest tests/test_foo.py tests/test_examples.py
 ```
 ```shell
-pytest -vvv -k standard
+pytest -k standard
 ```
 ```shell
-pytest -vvv -k cratedb
+pytest -k cratedb
+```
+```shell
+pytest -k "fivetran and ddl"
 ```
 
 ### Integration tests
