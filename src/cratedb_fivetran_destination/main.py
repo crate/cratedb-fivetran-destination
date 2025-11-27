@@ -121,6 +121,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         columns_new: t.List[common_pb2.Column] = []
         columns_changed: t.List[common_pb2.Column] = []
         columns_common: t.List[common_pb2.Column] = []
+        columns_deleted: t.List[common_pb2.Column] = []
 
         for column in new_table.columns:
             column_old = columns_old.get(column.name)
@@ -138,6 +139,26 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
                     columns_changed.append(column)
 
         table_info = self._table_info_from_request(request)
+
+        if request.drop_columns:
+            for column in old_table.columns:
+                if column not in new_table.columns:
+                    columns_deleted.append(column)
+            if columns_deleted:
+                amendments = []
+                for column in columns_deleted:
+                    amendments.append(f'DROP COLUMN "{column.name}"')
+                with self.engine.connect() as connection:
+                    connection.execute(
+                        sa.text(f"ALTER TABLE {table_info.fullname} {', '.join(amendments)}")
+                    )
+                log_message(
+                    LOG_INFO, f"AlterTable: Successfully altered table: {table_info.fullname}"
+                )
+            else:
+                log_message(LOG_INFO, "AlterTable (drop columns): Nothing changed")
+            return destination_sdk_pb2.AlterTableResponse(success=True)
+
         if pk_has_changed:
             log_message(
                 LOG_WARNING,
