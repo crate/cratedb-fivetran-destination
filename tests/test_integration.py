@@ -122,7 +122,6 @@ def test_integration_fivetran(capfd, services):
     assert "Updating definition for table: transaction" in err
     assert "Alter Table succeeded: transaction" in err
     assert "WriteBatch succeeded: transaction" in err
-    assert "Describe Table: transaction" in err
 
     assert "Create Table succeeded: campaign" in err
     assert "WriteBatch succeeded: campaign" in err
@@ -135,6 +134,10 @@ def test_integration_fivetran(capfd, services):
     assert "WriteBatch succeeded: composite_table" in err
     assert "Truncating: composite_table" in err
     assert "Truncate succeeded: composite_table" in err
+
+    assert "Describe Table: transaction" in err
+    assert "Describe Table: campaign" in err
+    assert "Describe Table: composite_table" in err
 
 
 @pytest.mark.parametrize("services", ["./tests/data/cratedb_canonical"], indirect=True)
