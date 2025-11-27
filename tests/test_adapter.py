@@ -220,6 +220,45 @@ def test_api_alter_table_nothing_changed(engine, capsys):
     assert format_log_message("AlterTable: Nothing changed", newline=True) in out
 
 
+def test_api_alter_table_drop_column_nothing_changed(engine, capsys):
+    """
+    Invoke gRPC API method `AlterTable` with `drop_columns=True`, but nothing changed.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    destination = CrateDBDestinationImpl()
+
+    with engine.connect() as conn:
+        conn.execute(sa.text("CREATE TABLE testdrive.foo (id INT)"))
+
+    # Invoke gRPC API method under test.
+    table: common_pb2.Table = common_pb2.Table(
+        name="foo",
+        columns=[
+            common_pb2.Column(
+                name="id",
+                type=common_pb2.DataType.INT,
+                primary_key=False,
+            )
+        ],
+    )
+    config = {"url": "crate://"}
+    response = destination.AlterTable(
+        request=destination_sdk_pb2.AlterTableRequest(
+            table=table, schema_name="testdrive", configuration=config, drop_columns=True
+        ),
+        context=destination_sdk_pb2.AlterTableResponse(),
+    )
+
+    # Validate outcome.
+    assert response.success is True
+    assert response.warning.message == ""
+
+    # Check log output.
+    out, err = capsys.readouterr()
+    assert format_log_message("AlterTable (drop columns): Nothing changed", newline=True) in out
+
+
 def test_api_alter_table_change_primary_key_type(engine, capsys):
     """
     Invoke gRPC API method `AlterTable`, changing the type of the primary key.

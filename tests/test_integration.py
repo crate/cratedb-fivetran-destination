@@ -140,6 +140,18 @@ def test_integration_fivetran(capfd, services):
     assert "Describe Table: composite_table" in err
 
 
+@pytest.mark.parametrize("services", ["./tests/data/fivetran_migrations_ddl"], indirect=True)
+def test_integration_fivetran_migrations_ddl(capfd, services):
+    """
+    Verify the Fivetran destination tester runs to completion with Fivetran test data.
+    """
+
+    # Read out stdout and stderr.
+    out, err = capfd.readouterr()
+
+    assert "Describe Table: transaction" in err
+
+
 @pytest.mark.parametrize("services", ["./tests/data/cratedb_canonical"], indirect=True)
 def test_integration_cratedb(capfd, services, engine):
     """
