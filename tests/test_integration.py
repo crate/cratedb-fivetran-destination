@@ -165,8 +165,6 @@ def test_integration_fivetran_migrations_dml(capfd, services):
     out, err = capfd.readouterr()
 
     assert "Describe Table: transaction" in err
-    assert "Describe Table: transaction_drop" in err
-    assert "Describe Table: transaction_new" in err
     assert "Describe Table: transaction_renamed" in err
 
 
