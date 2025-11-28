@@ -12,6 +12,7 @@
 - Testing: Updated to `sdk-tester:2.26.0113.001`
 - Compatibility: Field `_fivetran_deleted` became obligatory
 - Build: Trimmed `requirements.txt`, dependencies are defined in `pyproject.toml`
+- Added support for schema migrations.
 
 ## v0.0.3 - 2025-05-23
 - Dependencies: Updated to `sqlalchemy-cratedb==0.42.0.dev2`
