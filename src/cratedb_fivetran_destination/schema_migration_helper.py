@@ -236,12 +236,7 @@ class SchemaMigrationHelper:
         return destination_sdk_pb2.MigrateResponse(unsupported=True)
 
     def handle_add(self, add_op, schema, table, table_obj: common_pb2.Table):
-        """
-        Handles add operations (add column in history mode, add column with default value).
-
-        - https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#add_column_in_history_mode
-        - https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#add_column_with_default_value
-        """
+        """Handles add operations (add column in history mode, add column with default value)."""
         entity_case = add_op.WhichOneof("entity")
 
         # Add a column to history-mode tables while preserving historical record integrity.
@@ -340,6 +335,7 @@ class SchemaMigrationHelper:
         # Add a new column with a specified data type and default value.
         if entity_case == "add_column_with_default_value":
             add_col_default_with_value = add_op.add_column_with_default_value
+
             new_col = table_obj.columns.add()
             new_col.name = add_col_default_with_value.column
             new_col.type = add_col_default_with_value.column_type
@@ -378,7 +374,7 @@ class SchemaMigrationHelper:
         """Handles update column value operation."""
         with self.engine.connect() as conn:
             conn.execute(
-                sa.text(f'UPDATE "{schema}"."{table}" SET "{upd.column}"=:value;'),
+                sa.text(f'UPDATE "{schema}"."{table}" SET "{upd.column}"=:value;'),  # noqa: S608
                 parameters={"value": upd.value},
             )
             conn.execute(sa.text(f'REFRESH TABLE "{schema}"."{table}";'))
