@@ -141,8 +141,9 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         table_info = self._table_info_from_request(request)
 
         if request.drop_columns:
+            new_column_names = [column.name for column in new_table.columns]
             for column in old_table.columns:
-                if column not in new_table.columns:
+                if column.name not in new_column_names:
                     columns_deleted.append(column)
             if columns_deleted:
                 amendments = []
