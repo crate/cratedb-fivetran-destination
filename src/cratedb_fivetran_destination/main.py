@@ -24,15 +24,19 @@ from cratedb_fivetran_destination.util import LOG_INFO, LOG_WARNING, log_message
 from fivetran_sdk import common_pb2, destination_sdk_pb2, destination_sdk_pb2_grpc
 
 from . import read_csv
+from .schema_migration_helper import SchemaMigrationHelper
 
 logger = logging.getLogger()
 
 
 class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServicer):
+    table_map: t.Dict[str, FivetranTable] = {}
+
     def __init__(self):
         self.metadata = sa.MetaData()
         self.engine: sa.Engine = None
         self.processor: Processor = None
+        self.migration_helper = SchemaMigrationHelper(CrateDBDestinationImpl.table_map)
 
     def ConfigurationForm(self, request, context):
         log_message(LOG_INFO, "Fetching configuration form")
@@ -261,6 +265,56 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             table.columns.append(ft_column)
         log_message(LOG_INFO, f"Completed fetching table info: {table}")
         return destination_sdk_pb2.DescribeTableResponse(not_found=False, table=table)
+
+    def Migrate(self, request, context):
+        """
+        Example implementation of the new Migrate RPC introduced for schema migration support.
+        This method inspects which migration operation (oneof) was requested and logs / handles it.
+        For demonstration, all recognized operations return success.
+
+        :param request: The migration request contains details of the operation.
+        :param context: gRPC context
+
+        Note: This is just for demonstration, so no logic for migration is implemented
+              rather different migration methods are just manipulating table_map to simulate
+              the migration operations.
+        """
+        details = request.details
+        schema = details.schema
+        table = details.table
+
+        operation_case = details.WhichOneof("operation")
+        log_message(LOG_INFO, f"[Migrate] schema={schema} table={table} operation={operation_case}")
+
+        response = None
+
+        if operation_case == "drop":
+            response = self.migration_helper.handle_drop(details.drop, schema, table)
+
+        elif operation_case == "copy":
+            response = self.migration_helper.handle_copy(details.copy, schema, table)
+
+        elif operation_case == "rename":
+            response = self.migration_helper.handle_rename(details.rename, schema, table)
+
+        elif operation_case == "add":
+            response = self.migration_helper.handle_add(details.add, schema, table)
+
+        elif operation_case == "update_column_value":
+            response = self.migration_helper.handle_update_column_value(
+                details.update_column_value, schema, table
+            )
+
+        elif operation_case == "table_sync_mode_migration":
+            response = self.migration_helper.handle_table_sync_mode_migration(
+                details.table_sync_mode_migration, schema, table
+            )
+
+        else:
+            log_message(LOG_WARNING, "[Migrate] Unsupported or missing operation")
+            response = destination_sdk_pb2.MigrateResponse(unsupported=True)
+
+        return response
 
     def WriteHistoryBatch(self, request, context):
         """
