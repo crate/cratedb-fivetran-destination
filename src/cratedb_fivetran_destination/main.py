@@ -36,7 +36,6 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         self.metadata = sa.MetaData()
         self.engine: sa.Engine = None
         self.processor: Processor = None
-        self.migration_helper = SchemaMigrationHelper(CrateDBDestinationImpl.table_map)
 
     def ConfigurationForm(self, request, context):
         log_message(LOG_INFO, "Fetching configuration form")
@@ -246,9 +245,10 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         """
         self._configure_database(request.configuration.get("url"))
         table_name = self.table_name(request)
+        schema_name = self.schema_name(request)
         table: common_pb2.Table = common_pb2.Table(name=table_name)
         try:
-            sa_table = self._reflect_table(schema=request.schema_name, table=table_name)
+            sa_table = self._reflect_table(schema=schema_name, table=table_name)
         except sa.exc.NoSuchTableError:
             msg = f"Table not found: {table_name}"
             log_message(LOG_WARNING, f"DescribeTable: {msg}")
@@ -270,7 +270,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         """
         Example implementation of the new Migrate RPC introduced for schema migration support.
         This method inspects which migration operation (oneof) was requested and logs / handles it.
-        For demonstration, all recognized operations return success.
+        For demonstration, all recognized operations return `success`.
 
         :param request: The migration request contains details of the operation.
         :param context: gRPC context
@@ -279,6 +279,9 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
               rather different migration methods are just manipulating table_map to simulate
               the migration operations.
         """
+        self._configure_database(request.configuration.get("url"))
+        migration_helper = SchemaMigrationHelper(self.engine, CrateDBDestinationImpl.table_map)
+
         details = request.details
         schema = details.schema
         table = details.table
@@ -286,27 +289,27 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         operation_case = details.WhichOneof("operation")
         log_message(LOG_INFO, f"[Migrate] schema={schema} table={table} operation={operation_case}")
 
-        response = None
+        table_obj = self.DescribeTable(request, context).table
 
         if operation_case == "drop":
-            response = self.migration_helper.handle_drop(details.drop, schema, table)
+            response = migration_helper.handle_drop(details.drop, schema, table)
 
         elif operation_case == "copy":
-            response = self.migration_helper.handle_copy(details.copy, schema, table)
+            response = migration_helper.handle_copy(details.copy, schema, table, table_obj)
 
         elif operation_case == "rename":
-            response = self.migration_helper.handle_rename(details.rename, schema, table)
+            response = migration_helper.handle_rename(details.rename, schema, table)
 
         elif operation_case == "add":
-            response = self.migration_helper.handle_add(details.add, schema, table)
+            response = migration_helper.handle_add(details.add, schema, table, table_obj)
 
         elif operation_case == "update_column_value":
-            response = self.migration_helper.handle_update_column_value(
+            response = migration_helper.handle_update_column_value(
                 details.update_column_value, schema, table
             )
 
         elif operation_case == "table_sync_mode_migration":
-            response = self.migration_helper.handle_table_sync_mode_migration(
+            response = migration_helper.handle_table_sync_mode_migration(
                 details.table_sync_mode_migration, schema, table
             )
 
@@ -369,10 +372,21 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         return TableInfo(fullname=table.name, primary_keys=primary_keys)
 
     @staticmethod
+    def schema_name(request):
+        """
+        Return schema name from request object.
+        """
+        if hasattr(request, "details"):
+            return request.details.schema
+        return request.schema_name
+
+    @staticmethod
     def table_name(request):
         """
         Return table name from request object.
         """
+        if hasattr(request, "details"):
+            return request.details.table
         if hasattr(request, "table"):
             return request.table.name
         return request.table_name
