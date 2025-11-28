@@ -30,6 +30,9 @@ def reset_tables(engine):
         connection.execute(sa.text("DROP TABLE IF EXISTS tester.composite_table_alter_tmp"))
         connection.execute(sa.text("DROP TABLE IF EXISTS tester.transaction"))
         connection.execute(sa.text("DROP TABLE IF EXISTS tester.transaction_alter_tmp"))
+        connection.execute(sa.text("DROP TABLE IF EXISTS tester.transaction_drop"))
+        connection.execute(sa.text("DROP TABLE IF EXISTS tester.transaction_new"))
+        connection.execute(sa.text("DROP TABLE IF EXISTS tester.transaction_renamed"))
 
 
 @pytest.fixture()
@@ -150,6 +153,21 @@ def test_integration_fivetran_migrations_ddl(capfd, services):
     out, err = capfd.readouterr()
 
     assert "Describe Table: transaction" in err
+
+
+@pytest.mark.parametrize("services", ["./tests/data/fivetran_migrations_dml"], indirect=True)
+def test_integration_fivetran_migrations_dml(capfd, services):
+    """
+    Verify the Fivetran destination tester runs to completion with Fivetran test data.
+    """
+
+    # Read out stdout and stderr.
+    out, err = capfd.readouterr()
+
+    assert "Describe Table: transaction" in err
+    assert "Describe Table: transaction_drop" in err
+    assert "Describe Table: transaction_new" in err
+    assert "Describe Table: transaction_renamed" in err
 
 
 @pytest.mark.parametrize("services", ["./tests/data/cratedb_canonical"], indirect=True)

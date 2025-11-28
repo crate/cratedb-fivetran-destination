@@ -9,6 +9,7 @@ def engine():
         # Clean up stale "read-only" mode states.
         try:
             conn.execute(sa.text('ALTER TABLE testdrive.foo RESET ("blocks.write");'))
+            conn.execute(sa.text('ALTER TABLE tester.transaction RESET ("blocks.write");'))
         except Exception:  # noqa: S110
             pass
         conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
