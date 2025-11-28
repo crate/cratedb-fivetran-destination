@@ -177,11 +177,8 @@ class AlterTableRecreateStatements:
 
         # Put the source table into read+write mode again,
         # and replace it with the new newly populated temporary table.
-        sqlbag.add(f'ALTER TABLE {table_real} SET ("blocks.write"=false);')
-        sqlbag.add(f"ALTER CLUSTER SWAP TABLE {table_temp} TO {table_real}")
-
-        # Drop the temporary table.
-        sqlbag.add(f"DROP TABLE {table_temp}")
+        sqlbag.add(f'ALTER TABLE {table_real} RESET ("blocks.write");')
+        sqlbag.add(f"ALTER CLUSTER SWAP TABLE {table_temp} TO {table_real} WITH (drop_source=true)")
 
         return sqlbag
 
