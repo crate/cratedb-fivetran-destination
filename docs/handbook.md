@@ -56,9 +56,10 @@ The first GA release will be `cratedb-fivetran-destination:0.0.1`.
   populated. While the copy operation is taking place, the original table
   will block any writes, to avoid data loss.
   However, shortly before the table swap, to complete the operation, the
-  adapter needs to release the write block: At this point in time,
+  adapter needs to release the write block: At this point,
   before completing the swap operation, CrateDB may accept writes to
   the original table before swapping it out, which may lead to data loss.
+  To avoid any data loss, one should stop any writes during this operation.
 
 
 [^uv]: We recommend to use the [uv] package manager, but it also works without.
