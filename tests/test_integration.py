@@ -139,6 +139,21 @@ def test_integration_fivetran_migrations_ddl(capfd, services):
     assert "Describe Table: transaction" in err
 
 
+@pytest.mark.parametrize("services", ["./tests/data/fivetran_migrations_dml"], indirect=True)
+def test_integration_fivetran_migrations_dml(capfd, services):
+    """
+    Verify the Fivetran destination tester runs to completion with Fivetran test data.
+    """
+
+    # Read out stdout and stderr.
+    out, err = capfd.readouterr()
+
+    assert "Describe Table: transaction" in err
+    assert "Describe Table: transaction_drop" in err
+    assert "Describe Table: transaction_new" in err
+    assert "Describe Table: transaction_renamed" in err
+
+
 @pytest.mark.parametrize("services", ["./tests/data/cratedb_canonical"], indirect=True)
 def test_integration_cratedb(capfd, services, engine):
     """
