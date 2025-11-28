@@ -218,7 +218,7 @@ class SchemaMigrationHelper:
         """Handles update column value operation."""
         with self.engine.connect() as conn:
             conn.execute(
-                sa.text(f'UPDATE "{schema}"."{table}" SET "{upd.column}"=:value;'),
+                sa.text(f'UPDATE "{schema}"."{table}" SET "{upd.column}"=:value;'),  # noqa: S608
                 parameters={"value": upd.value},
             )
             conn.execute(sa.text(f'REFRESH TABLE "{schema}"."{table}";'))
