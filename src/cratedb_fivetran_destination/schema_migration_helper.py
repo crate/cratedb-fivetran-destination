@@ -173,7 +173,6 @@ class SchemaMigrationHelper:
 
         if entity_case == "add_column_with_default_value":
             add_col_default_with_value = add_op.add_column_with_default_value
-
             new_col = table_obj.columns.add()
             new_col.name = add_col_default_with_value.column
             new_col.type = add_col_default_with_value.column_type
@@ -205,7 +204,7 @@ class SchemaMigrationHelper:
         """Handles update column value operation."""
         with self.engine.connect() as conn:
             conn.execute(
-                sa.text(f'UPDATE "{schema}"."{table}" SET "{upd.column}"=:value;'),
+                sa.text(f'UPDATE "{schema}"."{table}" SET "{upd.column}"=:value;'),  # noqa: S608
                 parameters={"value": upd.value},
             )
             conn.execute(sa.text(f'REFRESH TABLE "{schema}"."{table}";'))
