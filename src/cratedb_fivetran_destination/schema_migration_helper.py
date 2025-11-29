@@ -177,10 +177,20 @@ class SchemaMigrationHelper:
             new_col = table_obj.columns.add()
             new_col.name = add_col_default_with_value.column
             new_col.type = add_col_default_with_value.column_type
+            default_value = add_col_default_with_value.default_value
             type_ = TypeMap.to_cratedb(new_col.type, new_col.params)
-            sql = f'ALTER TABLE "{schema}"."{table}" ADD COLUMN "{new_col.name}" {type_};'
+            # FIXME: Improve after CrateDB does it right.
+            #        - https://github.com/crate/cratedb-fivetran-destination/issues/111
+            #        - https://github.com/crate/crate/issues/18783
+            # sql = f'ALTER TABLE "{schema}"."{table}" ADD COLUMN "{new_col.name}" {type_} DEFAULT \'{default_value}\';'  # noqa: ERA001
+            sql_bag = SqlBag()
+            sql_bag.add(f'ALTER TABLE "{schema}"."{table}" ADD COLUMN "{new_col.name}" {type_};')
+            if default_value is not None:
+                sql_bag.add(
+                    f'UPDATE "{schema}"."{table}" SET "{new_col.name}" = \'{default_value}\';'
+                )
             with self.engine.connect() as conn:
-                conn.execute(sa.text(sql))
+                sql_bag.execute(conn)
 
             log_message(
                 LOG_INFO,
