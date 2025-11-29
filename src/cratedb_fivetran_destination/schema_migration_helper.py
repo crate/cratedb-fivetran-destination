@@ -90,8 +90,7 @@ class SchemaMigrationHelper:
 
             if sql_bag:
                 with self.engine.connect() as conn:
-                    for command in sql_bag.statements:
-                        conn.execute(sa.text(command))
+                    sql_bag.execute(conn)
 
             log_message(
                 LOG_INFO,
@@ -174,14 +173,14 @@ class SchemaMigrationHelper:
 
         if entity_case == "add_column_with_default_value":
             add_col_default_with_value = add_op.add_column_with_default_value
-            if table_obj:
-                new_col = table_obj.columns.add()
-                new_col.name = add_col_default_with_value.column
-                new_col.type = add_col_default_with_value.column_type
-                type_ = TypeMap.to_cratedb(new_col.type, new_col.params)
-                sql = f'ALTER TABLE "{schema}"."{table}" ADD COLUMN "{new_col.name}" {type_};'
-                with self.engine.connect() as conn:
-                    conn.execute(sa.text(sql))
+
+            new_col = table_obj.columns.add()
+            new_col.name = add_col_default_with_value.column
+            new_col.type = add_col_default_with_value.column_type
+            type_ = TypeMap.to_cratedb(new_col.type, new_col.params)
+            sql = f'ALTER TABLE "{schema}"."{table}" ADD COLUMN "{new_col.name}" {type_};'
+            with self.engine.connect() as conn:
+                conn.execute(sa.text(sql))
 
             log_message(
                 LOG_INFO,
@@ -196,7 +195,7 @@ class SchemaMigrationHelper:
         """Handles update column value operation."""
         with self.engine.connect() as conn:
             conn.execute(
-                sa.text(f'UPDATE "{schema}"."{table}" SET "{upd.column}"=:value;'),  # noqa: S608
+                sa.text(f'UPDATE "{schema}"."{table}" SET "{upd.column}"=:value;'),
                 parameters={"value": upd.value},
             )
             conn.execute(sa.text(f'REFRESH TABLE "{schema}"."{table}";'))
