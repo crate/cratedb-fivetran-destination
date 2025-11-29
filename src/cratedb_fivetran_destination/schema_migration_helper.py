@@ -1,16 +1,17 @@
 # ruff: noqa: E501,S608
 # https://github.com/fivetran/fivetran_partner_sdk/blob/main/examples/destination_connector/python/schema_migration_helper.py
+from copy import deepcopy
 
 import sqlalchemy as sa
 
-from cratedb_fivetran_destination.model import SqlBag, TypeMap
+from cratedb_fivetran_destination.model import FieldMap, SqlBag, TypeMap
 from cratedb_fivetran_destination.util import LOG_INFO, LOG_WARNING, log_message
 from fivetran_sdk import common_pb2, destination_sdk_pb2
 
 # Constants for system columns
-FIVETRAN_START = "_fivetran_start"
-FIVETRAN_END = "_fivetran_end"
-FIVETRAN_ACTIVE = "_fivetran_active"
+FIVETRAN_START = "__fivetran_start"
+FIVETRAN_END = "__fivetran_end"
+FIVETRAN_ACTIVE = "__fivetran_active"
 
 
 class SchemaMigrationHelper:
@@ -159,17 +160,98 @@ class SchemaMigrationHelper:
         return destination_sdk_pb2.MigrateResponse(unsupported=True)
 
     def handle_add(self, add_op, schema, table, table_obj: common_pb2.Table):
-        """Handles add operations (add column in history mode, add column with default value)."""
+        """
+        Handles add operations (add column in history mode, add column with default value).
+
+        - https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#add_column_in_history_mode
+        - https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#add_column_with_default_value
+        """
         entity_case = add_op.WhichOneof("entity")
 
+        # Add a column to history-mode tables while preserving historical record integrity.
         if entity_case == "add_column_in_history_mode":
-            # table-map manipulation to simulate add column in history mode, replace with actual logic.
             add_col_history_mode = add_op.add_column_in_history_mode
-            table_obj = self.table_map.get(table)
-            if table_obj:
-                new_col = table_obj.columns.add()
-                new_col.name = add_col_history_mode.column
-                new_col.type = add_col_history_mode.column_type
+
+            column_name = add_col_history_mode.column
+            column_type = TypeMap.to_cratedb(add_col_history_mode.column_type)
+            default_value = add_col_history_mode.default_value
+            operation_timestamp = add_col_history_mode.operation_timestamp
+
+            sql_bag = SqlBag()
+
+            # Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
+            with self.engine.connect() as conn:
+                conn.execute(sa.text(f'REFRESH TABLE "{schema}"."{table}";'))
+                sql = f"""
+                SELECT TO_CHAR(MAX({FIVETRAN_START}), 'YYYY-MM-DDTHH:MI:SSZ') AS max_start
+                FROM "{schema}"."{table}"
+                WHERE {FIVETRAN_ACTIVE} = TRUE
+                """
+                max_start = conn.execute(sa.text(sql)).scalar_one()
+                if max_start is not None and not max_start < operation_timestamp:
+                    msg = f"`operation_timestamp` {operation_timestamp} must be after `max(_fivetran_start)` {max_start}"
+                    log_message(
+                        LOG_WARNING,
+                        f"[Migrate:AddColumnHistory] table={schema}.{table} column={add_col_history_mode.column}: {msg}",
+                    )
+                    return destination_sdk_pb2.MigrateResponse(
+                        success=False, warning=common_pb2.Warning(message=msg)
+                    )
+
+            # Add the new column with the specified type.
+            sql_bag.add(f"""
+            ALTER TABLE "{schema}"."{table}" ADD COLUMN "{column_name}" {column_type};
+            """)
+
+            # Compute lists of columns.
+            table_obj_tmp = deepcopy(table_obj)
+            TableMetadataHelper.remove_column_from_table(table_obj_tmp, column_name)
+            TableMetadataHelper.remove_column_from_table(
+                table_obj_tmp, FieldMap.to_fivetran(FIVETRAN_START)
+            )
+            unchanged_columns = [
+                f'"{FieldMap.to_cratedb(col.name)}"' for col in table_obj_tmp.columns
+            ]
+            all_columns = unchanged_columns + [column_name, FIVETRAN_START]
+
+            # Insert new rows to record the history of the DDL operation.
+            sql_bag.add(f"""
+            INSERT INTO "{schema}"."{table}" ({", ".join(all_columns)})
+            (
+              SELECT
+                {", ".join(unchanged_columns)},
+                '{default_value}'::{column_type} AS "{column_name}",
+                '{operation_timestamp}'::TIMESTAMP AS {FIVETRAN_START}
+              FROM "{schema}"."{table}"
+              WHERE {FIVETRAN_ACTIVE} = TRUE
+                AND {FIVETRAN_START} < '{operation_timestamp}'
+            );
+            """)
+
+            # Update the newly added rows with the `default_value` and `operation_timestamp`.
+            # TODO: Remove? Is it really needed? It looks redundant to the operation above.
+            '''
+            sql_bag.add(f"""
+            UPDATE "{schema}"."{table}"
+            SET "{column_name}" = '{default_value}',
+                {FIVETRAN_START} = '{operation_timestamp}'
+            WHERE {FIVETRAN_ACTIVE} = TRUE
+              AND {FIVETRAN_START} = '{operation_timestamp}'
+            """)
+            '''
+
+            # Deactivate original active records (those without the new column set),
+            # by updating the previous active record's `_fivetran_end` to
+            # `(operation timestamp) - 1ms` and set `_fivetran_active` to `FALSE`.
+            sql_bag.add(f"""
+            UPDATE "{schema}"."{table}"
+            SET {FIVETRAN_END} = '{operation_timestamp}'::TIMESTAMP - INTERVAL '1 millisecond',
+                {FIVETRAN_ACTIVE} = FALSE
+            WHERE {FIVETRAN_ACTIVE} = TRUE
+              AND {FIVETRAN_START} < '{operation_timestamp}'::TIMESTAMP;
+            """)
+            with self.engine.connect() as conn:
+                sql_bag.execute(conn)
 
             log_message(
                 LOG_INFO,
@@ -177,6 +259,7 @@ class SchemaMigrationHelper:
             )
             return destination_sdk_pb2.MigrateResponse(success=True)
 
+        # Add a new column with a specified data type and default value.
         if entity_case == "add_column_with_default_value":
             add_col_default_with_value = add_op.add_column_with_default_value
             new_col = table_obj.columns.add()
