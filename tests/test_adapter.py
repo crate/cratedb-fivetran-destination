@@ -339,7 +339,7 @@ def test_api_alter_table_change_primary_key_name(engine, capsys):
     )
 
 
-def test_api_migrate_add_column_in_history_mode_operation_timestamp_wrong(engine):
+def test_api_migrate_add_column_in_history_mode_operation_timestamp_wrong(engine, capsys):
     """
     Invoke gRPC `Migrate::add_column_in_history_mode` operation with wrong operation_timestamp.
     """

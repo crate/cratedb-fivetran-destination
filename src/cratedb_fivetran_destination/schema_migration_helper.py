@@ -236,7 +236,12 @@ class SchemaMigrationHelper:
         return destination_sdk_pb2.MigrateResponse(unsupported=True)
 
     def handle_add(self, add_op, schema, table, table_obj: common_pb2.Table):
-        """Handles add operations (add column in history mode, add column with default value)."""
+        """
+        Handles add operations (add column in history mode, add column with default value).
+
+        - https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#add_column_in_history_mode
+        - https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#add_column_with_default_value
+        """
         entity_case = add_op.WhichOneof("entity")
 
         # Add a column to history-mode tables while preserving historical record integrity.
@@ -270,9 +275,15 @@ class SchemaMigrationHelper:
             """)
 
             # Compute lists of columns.
-            all_columns, unchanged_columns = TableMetadataHelper.column_lists(
-                table_obj, modulo_column_name=column_name
+            table_obj_tmp = deepcopy(table_obj)
+            TableMetadataHelper.remove_column_from_table(table_obj_tmp, column_name)
+            TableMetadataHelper.remove_column_from_table(
+                table_obj_tmp, FieldMap.to_fivetran(FIVETRAN_START)
             )
+            unchanged_columns = [
+                f'"{FieldMap.to_cratedb(col.name)}"' for col in table_obj_tmp.columns
+            ]
+            all_columns = unchanged_columns + [column_name, FIVETRAN_START]
 
             # Insert new rows to record the history of the DDL operation.
             sql_bag.add(
