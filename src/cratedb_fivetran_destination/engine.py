@@ -203,7 +203,7 @@ class EarliestStartHistoryStatements:
     """
 
     table: TableInfo
-    records: t.Generator[t.Dict[str, t.Any], None, None]
+    records: t.Union[t.List[t.Dict[str, t.Any]], t.Generator[t.Dict[str, t.Any], None, None]]
     records_list: t.List[t.Dict[str, t.Any]] = Factory(list)
 
     def __attrs_post_init__(self):
@@ -218,7 +218,7 @@ class EarliestStartHistoryStatements:
         sql.add(self.update_history_active())
         return sql
 
-    def hard_delete_with_timestamp(self) -> str:
+    def hard_delete_with_timestamp(self) -> t.Optional[str]:
         """
         Generate DELETE statements such as:
 
@@ -230,6 +230,13 @@ class EarliestStartHistoryStatements:
         This procedure combines primary key equality checks with a timestamp comparison
         for each row, matching the behavior of the Java `writeDelete` method which uses
         AND conditions between primary keys and the timestamp filter.
+
+        TODO: Use parameterized queries instead of string interpolation.
+              The primary key values and timestamps are directly interpolated into SQL strings
+              using f-strings. Consider refactoring to use parameterized queries similar to
+              `WriteBatchProcessor.process_records()` which uses
+              `connection.execute(sa.text(sql), record)`. The current approach makes it difficult
+              to properly escape values and could cause issues with special characters in data.
         """
         # Build primary key equality conditions and timestamp condition (AND).
         conditions = []
@@ -241,6 +248,9 @@ class EarliestStartHistoryStatements:
                 condition.append(f"\"{pk}\" = '{record[pk]}'")
             condition.append(f"\"{FIVETRAN_START}\" >= '{record[FIVETRAN_START]}'::TIMESTAMP")
             conditions.append(" AND ".join(condition))
+
+        if not conditions:
+            return None
 
         # Build row conditions (OR).
         conditions = [f"({condition})" for condition in conditions]
@@ -264,6 +274,10 @@ class EarliestStartHistoryStatements:
         This procedure updates history records by setting `_fivetran_active` to `FALSE`
         and `_fivetran_end` to the timestamp value from the data source,
         typically `_fivetran_start - 1`.
+
+        TODO: Review: The code below generates individual UPDATE statements per record instead of
+              the single SQL statement outlined above. This is more straight-forward, but might
+              be less efficient.
         """
         sql_bag = SqlBag()
         for record in self.records_list:
