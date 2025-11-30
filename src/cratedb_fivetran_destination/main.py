@@ -322,7 +322,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         table_obj = self.DescribeTable(request, context).table
 
         if operation_case == "drop":
-            response = migration_helper.handle_drop(details.drop, schema, table)
+            response = migration_helper.handle_drop(details.drop, schema, table, table_obj)
 
         elif operation_case == "copy":
             response = migration_helper.handle_copy(details.copy, schema, table, table_obj)
