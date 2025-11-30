@@ -56,54 +56,11 @@
                "column": "desc",
                "operation_timestamp": "2005-05-23T20:57:00Z"
             }
-         ],
-         "copy_table_to_history_mode": [
-            {
-               "from_table": "transaction",
-               "to_table": "new_transaction_history",
-               "deleted_column": "_fivetran_deleted"
-            }
-         ],
-         "migrate_history_to_live": [
-            {
-               "table": "transaction_history",
-               "keep_inactive_rows": true
-            }
-         ],
-         "migrate_soft_delete_to_live": [
-            {
-               "table": "transaction",
-               "deleted_column": "_fivetran_deleted"
-            }
-         ],
-         "migrate_live_to_soft_delete": [
-            {
-               "table": "transaction",
-               "deleted_column": "_fivetran_deleted"
-            }
-         ],
-         "migrate_soft_delete_to_history": [
-            {
-               "table": "transaction",
-               "deleted_column": "_fivetran_deleted"
-            }
-         ],
-         "migrate_live_to_history": [
-            {
-               "table": "transaction_history"
-            }
-         ],
-         "migrate_history_to_soft_delete": [
-            {
-               "table": "new_transaction_history",
-               "deleted_column": "_fivetran_deleted"
-            }
          ]
       }
    ],
    "describe_table" : [
       "transaction",
-      "transaction_history",
-      "new_transaction_history"
+      "transaction_history"
    ]
 }
