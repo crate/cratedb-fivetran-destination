@@ -7,6 +7,11 @@ from attrs import define
 from toolz import dissoc
 
 from cratedb_fivetran_destination.model import FieldMap, SqlBag, TableAddress, TableInfo, TypeMap
+from cratedb_fivetran_destination.schema_migration_helper import (
+    FIVETRAN_ACTIVE,
+    FIVETRAN_END,
+    FIVETRAN_START,
+)
 from fivetran_sdk import common_pb2
 
 logger = logging.getLogger()
@@ -184,7 +189,103 @@ class AlterTableRecreateStatements:
 
 
 @define
-class Processor:
+class EarliestStartHistoryStatements:
+    """
+    Manage and render SQL statements suitable for processing `earliest_start_files`.
+
+    DELETE FROM ...
+        WHERE pk1 = <val> {AND  pk2 = <val>...} AND _fivetran_start >= timestamp_value
+
+    UPDATE ... SET _fivetran_active = FALSE, _fivetran_end = _fivetran_start - 1 msec
+        WHERE _fivetran_active = TRUE AND pk1 = <val> {AND  pk2 = <val>...}
+
+    https://github.com/fivetran/fivetran_partner_sdk/blob/main/how-to-handle-history-mode-batch-files.md#earliest_start_files
+    """
+
+    table: TableInfo
+    records: t.Generator[t.Dict[str, t.Any], None, None]
+    records_list: t.List[t.Dict[str, t.Any]] = Factory(list)
+
+    def __attrs_post_init__(self):
+        self.records_list = list(self.records)
+
+    def to_sql(self) -> SqlBag:
+        """
+        Render statement to SQL.
+        """
+        sql = SqlBag()
+        sql.add(self.hard_delete_with_timestamp())
+        sql.add(self.update_history_active())
+        return sql
+
+    def hard_delete_with_timestamp(self) -> str:
+        """
+        Generate DELETE statements such as:
+
+        DELETE FROM `foo`.`bar` WHERE
+            (`id` = 1 AND `_fivetran_start` >= '1646455512123456789')
+         OR (`id` = 2 AND `_fivetran_start` >= '1680784200234567890')
+         OR (`id` = 3 AND `_fivetran_start` >= '1680784300234567890')
+
+        This procedure combines primary key equality checks with a timestamp comparison
+        for each row, matching the behavior of the Java `writeDelete` method which uses
+        AND conditions between primary keys and the timestamp filter.
+        """
+        # Build primary key equality conditions and timestamp condition (AND).
+        conditions = []
+        for record in self.records_list:
+            condition = []
+            for pk in self.table.primary_keys:
+                if pk == FIVETRAN_START:
+                    continue
+                condition.append(f"\"{pk}\" = '{record[pk]}'")
+            condition.append(f"\"{FIVETRAN_START}\" >= '{record[FIVETRAN_START]}'::TIMESTAMP")
+            conditions.append(" AND ".join(condition))
+
+        # Build row conditions (OR).
+        conditions = [f"({condition})" for condition in conditions]
+        return f"DELETE FROM {self.table.fullname} WHERE {' OR '.join(conditions)}"  # noqa: S608
+
+    def update_history_active(self) -> SqlBag:
+        """
+        Generate UPDATE statements such as:
+
+            ALTER TABLE `foo`.`bar`
+            UPDATE
+                `_fivetran_active` = FALSE,
+                `_fivetran_end` = CASE
+                    WHEN `id` = 1 THEN '1646455512123456788'
+                    WHEN `id` = 2 THEN '1680784200234567889'
+                    WHEN `id` = 3 THEN '1680786000345678900'
+                END
+            WHERE `id` IN (1, 2, 3)
+                AND `_fivetran_active` = TRUE
+
+        This procedure updates history records by setting `_fivetran_active` to `FALSE`
+        and `_fivetran_end` to the timestamp value from the data source,
+        typically `_fivetran_start - 1`.
+        """
+        sql_bag = SqlBag()
+        for record in self.records_list:
+            condition = []
+            for pk in self.table.primary_keys:
+                if pk == FIVETRAN_START:
+                    continue
+                condition.append(f"\"{pk}\" = '{record[pk]}'")
+            sql_bag.add(f"""
+            UPDATE {self.table.fullname}
+            SET
+                {FIVETRAN_ACTIVE} = FALSE,
+                {FIVETRAN_END} = '{record[FIVETRAN_START]}'::TIMESTAMP - INTERVAL '1 millisecond'
+            WHERE
+                {FIVETRAN_ACTIVE} = TRUE
+            AND {" AND ".join(condition)}
+            """)  # noqa: S608
+        return sql_bag
+
+
+@define
+class WriteBatchProcessor:
     engine: sa.Engine
 
     def process(
@@ -207,6 +308,64 @@ class Processor:
                 connection,
                 update_records,
                 lambda record: UpdateStatement(table=table_info, record=record).to_sql(),
+            )
+
+            self.process_records(
+                connection,
+                delete_records,
+                lambda record: DeleteStatement(table=table_info, record=record).to_sql(),
+            )
+
+    def process_records(self, connection, records, converter):
+        for record in records:
+            # DML statements are always singular, because they are accompanied with a `record`.
+            sql = converter(record).statements[0]
+            try:
+                connection.execute(sa.text(sql), record)
+            except sa.exc.ProgrammingError as ex:
+                logger.error(f"Processing database operation failed: {ex}")
+                raise
+
+
+@define
+class WriteHistoryBatchProcessor:
+    """
+    History mode allows to capture every available version of each record.
+
+    The following types of files are a part of the WriteHistoryBatchRequest gRPC call.
+    These files must be processed in the exact order as described in the following subsections.
+
+    earliest_start_files, update_files, replace_files, delete_files
+
+    - https://github.com/fivetran/fivetran_partner_sdk/blob/main/how-to-handle-history-mode-batch-files.md
+    - https://fivetran.com/docs/using-fivetran/features#historymode
+    """
+
+    engine: sa.Engine
+
+    def process(
+        self,
+        table_info: TableInfo,
+        earliest_start_records: t.Generator[t.Dict[str, t.Any], None, None],
+        update_records: t.Generator[t.Dict[str, t.Any], None, None],
+        replace_records: t.Generator[t.Dict[str, t.Any], None, None],
+        delete_records: t.Generator[t.Dict[str, t.Any], None, None],
+    ):
+        with self.engine.connect() as connection:
+            EarliestStartHistoryStatements(
+                table=table_info, records=earliest_start_records
+            ).to_sql().execute(connection)
+
+            self.process_records(
+                connection,
+                update_records,
+                lambda record: UpdateStatement(table=table_info, record=record).to_sql(),
+            )
+
+            self.process_records(
+                connection,
+                replace_records,
+                lambda record: UpsertStatement(table=table_info, record=record).to_sql(),
             )
 
             self.process_records(
