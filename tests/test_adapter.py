@@ -4,7 +4,7 @@ import pytest
 import sqlalchemy as sa
 
 from cratedb_fivetran_destination import __version__
-from cratedb_fivetran_destination.engine import Processor
+from cratedb_fivetran_destination.engine import WriteBatchProcessor
 from cratedb_fivetran_destination.model import TableInfo
 from cratedb_fivetran_destination.util import format_log_message, setup_logging
 from fivetran_sdk import common_pb2, destination_sdk_pb2
@@ -397,7 +397,7 @@ def test_api_migrate_add_column_in_history_mode_operation_timestamp_wrong(engine
 
 def test_processor_failing(engine):
     table_info = TableInfo(fullname="unknown.unknown", primary_keys=["id"])
-    p = Processor(engine=engine)
+    p = WriteBatchProcessor(engine=engine)
     with pytest.raises(sa.exc.ProgrammingError) as ex:
         p.process(
             table_info=table_info,

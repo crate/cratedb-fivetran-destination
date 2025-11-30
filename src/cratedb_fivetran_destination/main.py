@@ -10,7 +10,8 @@ import sqlalchemy as sa
 from cratedb_fivetran_destination.engine import (
     AlterTableInplaceStatements,
     AlterTableRecreateStatements,
-    Processor,
+    WriteBatchProcessor,
+    WriteHistoryBatchProcessor,
 )
 from cratedb_fivetran_destination.model import (
     FieldMap,
@@ -35,7 +36,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
     def __init__(self):
         self.metadata = sa.MetaData()
         self.engine: sa.Engine = None
-        self.processor: Processor = None
+        self.processor: WriteBatchProcessor = None
 
     def ConfigurationForm(self, request, context):
         log_message(LOG_INFO, "Fetching configuration form")
@@ -221,7 +222,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
     def WriteBatch(self, request, context):
         """
-        Upsert records using SQL.
+        Load data into table.
         """
         self._configure_database(request.configuration.get("url"))
         table_info = self._table_info_from_request(request)
@@ -233,6 +234,35 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             delete_records=self._files_to_records(request, request.delete_files),
         )
         log_message(LOG_INFO, f"Data loading completed for table: {request.table.name}")
+
+        res: destination_sdk_pb2.WriteBatchResponse = destination_sdk_pb2.WriteBatchResponse(
+            success=True
+        )
+        return res
+
+    def WriteHistoryBatch(self, request, context):
+        """
+        Load data into table under history mode.
+        History mode allows to capture every available version of each record.
+        """
+        self._configure_database(request.configuration.get("url"))
+        table_info = self._table_info_from_request(request)
+        log_message(
+            LOG_INFO, f"Data loading in history mode started for table: {request.table.name}"
+        )
+        processor = WriteHistoryBatchProcessor(engine=self.engine)
+        processor.process(
+            table_info=table_info,
+            earliest_start_records=self._files_to_records(request, request.earliest_start_files),
+            # TODO: Those operations are currently taken from regular table loading.
+            #       Please verify if they need to be adjusted for history mode.
+            update_records=self._files_to_records(request, request.update_files),
+            replace_records=self._files_to_records(request, request.replace_files),
+            delete_records=self._files_to_records(request, request.delete_files),
+        )
+        log_message(
+            LOG_INFO, f"Data loading in history mode completed for table: {request.table.name}"
+        )
 
         res: destination_sdk_pb2.WriteBatchResponse = destination_sdk_pb2.WriteBatchResponse(
             success=True
@@ -319,16 +349,10 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
         return response
 
-    def WriteHistoryBatch(self, request, context):
-        """
-        TODO: Implement method for real.
-        """
-        return destination_sdk_pb2.WriteBatchResponse(success=True)
-
     def _configure_database(self, url):
         if not self.engine:
             self.engine = sa.create_engine(url, echo=False)
-            self.processor = Processor(engine=self.engine)
+            self.processor = WriteBatchProcessor(engine=self.engine)
 
     @staticmethod
     def _files_to_records(request, files: t.List[str]):
