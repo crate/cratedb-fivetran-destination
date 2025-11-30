@@ -11,7 +11,12 @@ def test_sqlbag(engine):
         bag.execute(connection)
 
 
-def test_sqlbag_add_none():
+def test_sqlbag_add_wrong_none():
+    bag = SqlBag().add(None)
+    assert bool(bag) is False
+
+
+def test_sqlbag_add_wrong_type():
     with pytest.raises(TypeError) as excinfo:
-        SqlBag().add(None)
-    excinfo.match(re.escape("Input SQL must be str or SqlBag, not <class 'NoneType'>"))
+        SqlBag().add(42)
+    excinfo.match(re.escape('Input SQL must be str or SqlBag, not "int"'))

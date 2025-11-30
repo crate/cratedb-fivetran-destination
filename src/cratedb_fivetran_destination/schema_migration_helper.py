@@ -67,6 +67,8 @@ class SchemaMigrationHelper:
             sql_bag = SqlBag()
 
             # Insert new rows to record the history of the DDL operation.
+            # TODO: The `operation_timestamp` is directly interpolated into SQL strings.
+            #       Consider using parameterized queries.
             sql_bag.add(f"""
             INSERT INTO "{schema}"."{table}" ({", ".join(all_columns)})
             (
@@ -271,6 +273,8 @@ class SchemaMigrationHelper:
             )
 
             # Insert new rows to record the history of the DDL operation.
+            # TODO: `default_value` is directly interpolated without escaping. If it contains single
+            #        quotes or other SQL metacharacters, this will cause syntax errors or injection.
             sql_bag.add(f"""
             INSERT INTO "{schema}"."{table}" ({", ".join(all_columns)})
             (
@@ -280,7 +284,7 @@ class SchemaMigrationHelper:
                 '{operation_timestamp}'::TIMESTAMP AS {FIVETRAN_START}
               FROM "{schema}"."{table}"
               WHERE {FIVETRAN_ACTIVE} = TRUE
-                AND {FIVETRAN_START} < '{operation_timestamp}'
+                AND {FIVETRAN_START} < '{operation_timestamp}'::TIMESTAMP
             );
             """)
 
@@ -460,13 +464,14 @@ class SchemaMigrationHelper:
         """
         with self.engine.connect() as conn:
             conn.execute(sa.text(f'REFRESH TABLE "{schema}"."{table}";'))
+            # TODO: Validate for emptiness.
             sql = f"""
             SELECT TO_CHAR(MAX({FIVETRAN_START}), 'YYYY-MM-DDTHH:MI:SSZ') AS max_start
             FROM "{schema}"."{table}"
             WHERE {FIVETRAN_ACTIVE} = TRUE
             """
             max_start = conn.execute(sa.text(sql)).scalar_one()
-            if max_start is not None and not max_start < operation_timestamp:
+            if max_start is not None and max_start >= operation_timestamp:
                 raise ValueError(
                     f"`operation_timestamp` {operation_timestamp} must be after `max(_fivetran_start)` {max_start}"
                 )
@@ -545,5 +550,8 @@ class TableMetadataHelper:
             table_obj_tmp, FieldMap.to_fivetran(FIVETRAN_START)
         )
         unchanged_columns = [f'"{FieldMap.to_cratedb(col.name)}"' for col in table_obj_tmp.columns]
-        all_columns = unchanged_columns + [f'"{modulo_column_name}"', FIVETRAN_START]
+        if modulo_column_name is not None:
+            all_columns = [*unchanged_columns, f'"{modulo_column_name}"', FIVETRAN_START]
+        else:
+            all_columns = [*unchanged_columns, FIVETRAN_START]
         return all_columns, unchanged_columns
