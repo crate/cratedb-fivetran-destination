@@ -1,5 +1,6 @@
 # ruff: noqa: E501,S608
 # https://github.com/fivetran/fivetran_partner_sdk/blob/main/examples/destination_connector/python/schema_migration_helper.py
+import typing as t
 from copy import deepcopy
 
 import sqlalchemy as sa
@@ -21,8 +22,13 @@ class SchemaMigrationHelper:
         self.engine = engine
         self.table_map = table_map
 
-    def handle_drop(self, drop_op, schema, table):
-        """Handles drop operations (drop table, drop column in history mode)."""
+    def handle_drop(self, drop_op, schema, table, table_obj):
+        """
+        Handles drop operations (drop table, drop column in history mode).
+
+        - https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#drop_table
+        - https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#drop_column_in_history_mode
+        """
         entity_case = drop_op.WhichOneof("entity")
 
         if entity_case == "drop_table":
@@ -34,16 +40,77 @@ class SchemaMigrationHelper:
             return destination_sdk_pb2.MigrateResponse(success=True)
 
         if entity_case == "drop_column_in_history_mode":
-            # table-map manipulation to simulate drop column in history mode, replace with actual logic.
             drop_column = drop_op.drop_column_in_history_mode
-            table_obj = self.table_map.get(table)
-            if table_obj:
-                # Remove the specified column from the table
-                columns_to_keep = [
-                    col for col in table_obj.columns if col.name != drop_column.column
-                ]
-                del table_obj.columns[:]
-                table_obj.columns.extend(columns_to_keep)
+
+            column_name = drop_column.column
+            operation_timestamp = drop_column.operation_timestamp
+
+            # Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
+            try:
+                self._validate_history_table(schema, table, operation_timestamp)
+            except ValueError as e:
+                message = e.args[0]
+                log_message(
+                    LOG_WARNING,
+                    f"[Migrate:AddColumnHistory] table={schema}.{table} column={column_name}: {message}",
+                )
+                return destination_sdk_pb2.MigrateResponse(
+                    success=False,
+                    warning=common_pb2.Warning(message=message),
+                )
+
+            # Compute lists of columns.
+            all_columns, unchanged_columns = TableMetadataHelper.column_lists(
+                table_obj, modulo_column_name=column_name
+            )
+
+            sql_bag = SqlBag()
+
+            # Insert new rows to record the history of the DDL operation.
+            sql_bag.add(f"""
+            INSERT INTO "{schema}"."{table}" ({", ".join(all_columns)})
+            (
+              SELECT
+                {", ".join(unchanged_columns)},
+                NULL AS "{column_name}",
+                '{operation_timestamp}'::TIMESTAMP AS {FIVETRAN_START}
+              FROM "{schema}"."{table}"
+              WHERE {FIVETRAN_ACTIVE} = TRUE
+                AND "{column_name}" IS NOT NULL
+                AND {FIVETRAN_START} < '{operation_timestamp}'::TIMESTAMP
+            );
+            """)
+
+            # Update the newly added row with the `operation_timestamp`.
+            sql_bag.add(f"""
+            UPDATE "{schema}"."{table}"
+            SET "{column_name}" = NULL
+            WHERE {FIVETRAN_START} = '{operation_timestamp}'::TIMESTAMP;
+            """)
+
+            # Update the previous record's `_fivetran_end` to `(operation timestamp) - 1ms`
+            # and set `_fivetran_active` to `FALSE`.
+            sql_bag.add(f"""
+            UPDATE "{schema}"."{table}"
+               SET
+                 {FIVETRAN_END} = '{operation_timestamp}'::TIMESTAMP - INTERVAL '1 millisecond',
+                 {FIVETRAN_ACTIVE} = FALSE
+               WHERE {FIVETRAN_ACTIVE} = TRUE
+                 AND "{column_name}" IS NOT NULL
+                 AND {FIVETRAN_START} < '{operation_timestamp}'::TIMESTAMP;
+            """)
+
+            # TODO: Review this: It mitigates a severe error raised by
+            #       the Fivetran SDK tester, but is it actually intended?
+            # INFO:   Fivetran-Tester-Process: Verifying if migration is success. Triggering describeTable for table: transaction_history
+            # SEVERE: Fivetran-Tester-Process: Failed to process file: schema_migrations_input_sync_modes.json - Column 'desc' still exists after drop operation in history mode.
+            sql_bag.add(f"""
+            ALTER TABLE "{schema}"."{table}"
+            DROP COLUMN "{column_name}";
+            """)
+
+            with self.engine.connect() as conn:
+                sql_bag.execute(conn)
 
             log_message(
                 LOG_INFO,
@@ -174,23 +241,18 @@ class SchemaMigrationHelper:
             sql_bag = SqlBag()
 
             # Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
-            with self.engine.connect() as conn:
-                conn.execute(sa.text(f'REFRESH TABLE "{schema}"."{table}";'))
-                sql = f"""
-                SELECT TO_CHAR(MAX({FIVETRAN_START}), 'YYYY-MM-DDTHH:MI:SSZ') AS max_start
-                FROM "{schema}"."{table}"
-                WHERE {FIVETRAN_ACTIVE} = TRUE
-                """
-                max_start = conn.execute(sa.text(sql)).scalar_one()
-                if max_start is not None and not max_start < operation_timestamp:
-                    msg = f"`operation_timestamp` {operation_timestamp} must be after `max(_fivetran_start)` {max_start}"
-                    log_message(
-                        LOG_WARNING,
-                        f"[Migrate:AddColumnHistory] table={schema}.{table} column={add_col_history_mode.column}: {msg}",
-                    )
-                    return destination_sdk_pb2.MigrateResponse(
-                        success=False, warning=common_pb2.Warning(message=msg)
-                    )
+            try:
+                self._validate_history_table(schema, table, operation_timestamp)
+            except ValueError as e:
+                message = e.args[0]
+                log_message(
+                    LOG_WARNING,
+                    f"[Migrate:AddColumnHistory] table={schema}.{table} column={column_name}: {message}",
+                )
+                return destination_sdk_pb2.MigrateResponse(
+                    success=False,
+                    warning=common_pb2.Warning(message=message),
+                )
 
             # Add the new column with the specified type.
             sql_bag.add(f"""
@@ -198,15 +260,9 @@ class SchemaMigrationHelper:
             """)
 
             # Compute lists of columns.
-            table_obj_tmp = deepcopy(table_obj)
-            TableMetadataHelper.remove_column_from_table(table_obj_tmp, column_name)
-            TableMetadataHelper.remove_column_from_table(
-                table_obj_tmp, FieldMap.to_fivetran(FIVETRAN_START)
+            all_columns, unchanged_columns = TableMetadataHelper.column_lists(
+                table_obj, modulo_column_name=column_name
             )
-            unchanged_columns = [
-                f'"{FieldMap.to_cratedb(col.name)}"' for col in table_obj_tmp.columns
-            ]
-            all_columns = unchanged_columns + [column_name, FIVETRAN_START]
 
             # Insert new rows to record the history of the DDL operation.
             sql_bag.add(f"""
@@ -386,6 +442,23 @@ class SchemaMigrationHelper:
         )
         return destination_sdk_pb2.MigrateResponse(unsupported=True)
 
+    def _validate_history_table(self, schema, table, operation_timestamp):
+        """
+        Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
+        """
+        with self.engine.connect() as conn:
+            conn.execute(sa.text(f'REFRESH TABLE "{schema}"."{table}";'))
+            sql = f"""
+            SELECT TO_CHAR(MAX({FIVETRAN_START}), 'YYYY-MM-DDTHH:MI:SSZ') AS max_start
+            FROM "{schema}"."{table}"
+            WHERE {FIVETRAN_ACTIVE} = TRUE
+            """
+            max_start = conn.execute(sa.text(sql)).scalar_one()
+            if max_start is not None and not max_start < operation_timestamp:
+                raise ValueError(
+                    f"`operation_timestamp` {operation_timestamp} must be after `max(_fivetran_start)` {max_start}"
+                )
+
 
 class TableMetadataHelper:
     """Helper class for table metadata operations"""
@@ -447,3 +520,18 @@ class TableMetadataHelper:
         soft_del_col = table_obj.columns.add()
         soft_del_col.name = column_name
         soft_del_col.type = common_pb2.DataType.BOOLEAN
+
+    @classmethod
+    def column_lists(
+        cls, table_obj: common_pb2.Table, modulo_column_name: t.Optional[str] = None
+    ) -> t.Tuple[t.List[str], t.List[str]]:
+        """Return list of column names."""
+        table_obj_tmp = deepcopy(table_obj)
+        if modulo_column_name is not None:
+            TableMetadataHelper.remove_column_from_table(table_obj_tmp, modulo_column_name)
+        TableMetadataHelper.remove_column_from_table(
+            table_obj_tmp, FieldMap.to_fivetran(FIVETRAN_START)
+        )
+        unchanged_columns = [f'"{FieldMap.to_cratedb(col.name)}"' for col in table_obj_tmp.columns]
+        all_columns = unchanged_columns + [f'"{modulo_column_name}"', FIVETRAN_START]
+        return all_columns, unchanged_columns
