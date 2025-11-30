@@ -5,6 +5,7 @@ import sqlalchemy as sa
 from attr import Factory
 from attrs import define
 from sqlalchemy_cratedb import ObjectType
+from sqlalchemy_cratedb.type.object import ObjectTypeImpl
 
 from cratedb_fivetran_destination.dictx import OrderedDictX
 from fivetran_sdk import common_pb2
@@ -79,7 +80,7 @@ class TypeMap:
         DataType.DECIMAL: sa.DECIMAL(6, 3),
         DataType.BINARY: sa.Text(),
         DataType.STRING: sa.String(),
-        DataType.JSON: ObjectType,
+        DataType.JSON: ObjectTypeImpl(),
         DataType.XML: sa.String(),
         DataType.NAIVE_TIME: sa.TIMESTAMP(),
     }
@@ -113,6 +114,7 @@ class TypeMap:
         sa.LargeBinary: DataType.BINARY,
         sa.BINARY: DataType.BINARY,
         ObjectType: DataType.JSON,
+        ObjectTypeImpl: DataType.JSON,
         # FIXME: What about Arrays?
     }
 
