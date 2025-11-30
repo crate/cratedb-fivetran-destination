@@ -189,8 +189,13 @@ class SqlBag:
     def __bool__(self):
         return bool(self.statements)
 
-    def add(self, sql: str):
-        self.statements.append(dedent(sql).strip())
+    def add(self, sql: t.Union[str, "SqlBag"]):
+        if isinstance(sql, str):
+            self.statements.append(dedent(sql).strip())
+        elif isinstance(sql, SqlBag):
+            self.statements += sql.statements
+        else:
+            raise TypeError(f"Input SQL must be str or SqlBag, not {type(sql)}")
         return self
 
     def execute(self, connection: sa.Connection):
