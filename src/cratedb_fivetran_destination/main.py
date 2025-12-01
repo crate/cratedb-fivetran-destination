@@ -31,6 +31,7 @@ logger = logging.getLogger()
 
 
 class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServicer):
+    # FIXME: Remove. This is part of the simulation.
     table_map: t.Dict[str, FivetranTable] = {}
 
     def __init__(self):
