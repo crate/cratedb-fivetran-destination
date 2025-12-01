@@ -463,8 +463,17 @@ class SchemaMigrationHelper:
         Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
         """
         with self.engine.connect() as conn:
+            # Synchronize previous writes.
             conn.execute(sa.text(f'REFRESH TABLE "{schema}"."{table}";'))
-            # TODO: Validate for emptiness.
+
+            # Check for emptiness.
+            cardinality = int(
+                conn.execute(sa.text(f'SELECT COUNT(*) FROM "{schema}"."{table}";')).scalar_one()
+            )
+            if cardinality == 0:
+                raise ValueError("table is empty")
+
+            # Validate operation timestamp condition.
             sql = f"""
             SELECT TO_CHAR(MAX({FIVETRAN_START}), 'YYYY-MM-DDTHH:MI:SSZ') AS max_start
             FROM "{schema}"."{table}"
