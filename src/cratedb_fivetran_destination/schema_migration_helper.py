@@ -52,7 +52,7 @@ class SchemaMigrationHelper:
                 message = e.args[0]
                 log_message(
                     LOG_WARNING,
-                    f"[Migrate:AddColumnHistory] table={schema}.{table} column={column_name}: {message}",
+                    f"[Migrate:DropColumnHistory] table={schema}.{table} column={column_name}: {message}",
                 )
                 return destination_sdk_pb2.MigrateResponse(
                     success=False,
