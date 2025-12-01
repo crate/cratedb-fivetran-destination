@@ -163,6 +163,7 @@ def test_integration_fivetran_migrations_sync(capfd, services):
 
     assert "Describe Table: transaction" in err
     assert "Describe Table: transaction_history" in err
+    assert "Describe Table: new_transaction_history" in err
 
 
 @pytest.mark.parametrize("services", ["./tests/data/cratedb_canonical"], indirect=True)
