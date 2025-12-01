@@ -37,7 +37,6 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
     def __init__(self):
         self.metadata = sa.MetaData()
         self.engine: sa.Engine = None
-        self.processor: WriteBatchProcessor = None
 
     def ConfigurationForm(self, request, context):
         log_message(LOG_INFO, "Fetching configuration form")
@@ -228,7 +227,8 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         self._configure_database(request.configuration.get("url"))
         table_info = self._table_info_from_request(request)
         log_message(LOG_INFO, f"Data loading started for table: {request.table.name}")
-        self.processor.process(
+        processor = WriteBatchProcessor(self.engine)
+        processor.process(
             table_info=table_info,
             upsert_records=self._files_to_records(request, request.replace_files),
             update_records=self._files_to_records(request, request.update_files),

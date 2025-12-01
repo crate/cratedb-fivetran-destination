@@ -1,10 +1,8 @@
-import typing as t
-
 import pytest
 import sqlalchemy as sa
 
 from cratedb_fivetran_destination.engine import EarliestStartHistoryStatements
-from cratedb_fivetran_destination.model import FivetranTable, TableInfo
+from cratedb_fivetran_destination.model import TableInfo
 from cratedb_fivetran_destination.schema_migration_helper import SchemaMigrationHelper
 
 
@@ -15,7 +13,7 @@ def test_earliest_start_history_statements():
 
 def test_schema_migration_helper_validate_history_table(engine):
     # FIXME: Remove `table_map`. This is part of the simulation.
-    table_map: t.Dict[str, FivetranTable] = {}
+    table_map = {}
     smh = SchemaMigrationHelper(engine, table_map)
 
     # Create an empty table to trigger the error condition.
