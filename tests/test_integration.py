@@ -7,7 +7,10 @@ from unittest import mock
 import pytest
 import sqlalchemy as sa
 from sqlalchemy.sql.type_api import UserDefinedType
+from sqlalchemy.testing.util import drop_all_tables
 from sqlalchemy_cratedb import ObjectType
+
+from tests.conftest import unblock_all_tables
 
 pytestmark = pytest.mark.sdktester
 
@@ -22,14 +25,9 @@ def run(command: str, background: bool = False):
 @pytest.fixture(autouse=True)
 def reset_tables(engine):
     with engine.connect() as connection:
-        connection.execute(sa.text("DROP TABLE IF EXISTS tester.all_types"))
-        connection.execute(sa.text("DROP TABLE IF EXISTS tester.all_types_alter_tmp"))
-        connection.execute(sa.text("DROP TABLE IF EXISTS tester.campaign"))
-        connection.execute(sa.text("DROP TABLE IF EXISTS tester.campaign_alter_tmp"))
-        connection.execute(sa.text("DROP TABLE IF EXISTS tester.composite_table"))
-        connection.execute(sa.text("DROP TABLE IF EXISTS tester.composite_table_alter_tmp"))
-        connection.execute(sa.text("DROP TABLE IF EXISTS tester.transaction"))
-        connection.execute(sa.text("DROP TABLE IF EXISTS tester.transaction_alter_tmp"))
+        inspector = sa.inspect(connection)
+        unblock_all_tables(engine, inspector, schema="tester")
+        drop_all_tables(engine, inspector, schema="tester")
 
 
 @pytest.fixture()

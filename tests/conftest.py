@@ -1,17 +1,24 @@
 import pytest
 import sqlalchemy as sa
+from sqlalchemy.testing.util import drop_all_tables
 
 
 @pytest.fixture
 def engine():
     engine = sa.create_engine("crate://")
-    with engine.connect() as conn:
-        # Clean up stale "read-only" mode states.
-        try:
-            conn.execute(sa.text('ALTER TABLE testdrive.foo RESET ("blocks.write");'))
-        except Exception:  # noqa: S110
-            pass
-        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo"))
-        conn.execute(sa.text("DROP TABLE IF EXISTS testdrive.foo_alter_tmp"))
+    with engine.connect() as connection:
+        inspector = sa.inspect(connection)
+        unblock_all_tables(engine, inspector, schema="testdrive")
+        drop_all_tables(engine, inspector, schema="testdrive")
     yield engine
     engine.dispose()
+
+
+def unblock_all_tables(engine: sa.Engine, inspector: sa.Inspector, schema: str):
+    """
+    Clean up stale "read-only" mode states of all tables in schema.
+    """
+    with engine.begin() as connection:
+        tables = inspector.get_table_names(schema=schema)
+        for table in tables:
+            connection.execute(sa.text(f'ALTER TABLE "{schema}"."{table}" RESET ("blocks.write");'))
