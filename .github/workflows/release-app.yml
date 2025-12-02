@@ -11,7 +11,8 @@ on:
       - '*'
 
   # Build application on each pull request for validation purposes.
-  pull_request:
+  # Remark: Disabled to conserve CI resources. Use workflow_dispatch for manual builds.
+  # pull_request:
 
   # Build application each night for validation purposes.
   # schedule:
