@@ -10,6 +10,7 @@ from sqlalchemy.sql.type_api import UserDefinedType
 from sqlalchemy.testing.util import drop_all_tables
 from sqlalchemy_cratedb import ObjectType
 
+from cratedb_fivetran_destination.testing import SDK_TESTER_OCI
 from tests.conftest import unblock_all_tables
 
 pytestmark = pytest.mark.sdktester
@@ -39,9 +40,7 @@ def services(request):
 
     processes = []
 
-    oci_image = (
-        "us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:2.25.1105.001"
-    )
+    oci_image = SDK_TESTER_OCI
     run("gcloud auth configure-docker us-docker.pkg.dev")
     run(f"docker pull {oci_image}")
 

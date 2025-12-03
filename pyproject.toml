@@ -109,6 +109,7 @@ urls."Release Notes" = "https://github.com/crate/cratedb-fivetran-destination/re
 urls.Repository = "https://github.com/crate/cratedb-fivetran-destination"
 
 scripts.cratedb-fivetran-destination = "cratedb_fivetran_destination.cli:main"
+scripts.fivetran-sdk-tester = "cratedb_fivetran_destination.testing:cli"
 
 [tool.ruff]
 line-length = 100
