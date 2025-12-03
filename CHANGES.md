@@ -9,6 +9,7 @@
 - Added support for `AlterTable::drop_columns` operation.
 - Added support for schema migrations.
 - Added support for history mode.
+- Added support for Fivetran's `TIME_NAIVE` data type.
 
 ## v0.0.3 - 2025-05-23
 - Dependencies: Updated to `sqlalchemy-cratedb==0.42.0.dev2`

@@ -106,7 +106,7 @@ RECORD_REFERENCE = dict(  # noqa: C408
     string="Hotzenplotz",
     json={"count": 42, "foo": "bar"},
     xml="XML",
-    naive_time=86400000,
+    naive_time=45296000,
     __fivetran_synced=mock.ANY,
     __fivetran_id="zyx-987-abc",
 )

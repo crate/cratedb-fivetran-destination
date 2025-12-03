@@ -46,7 +46,7 @@
             "string": "Hotzenplotz",
             "json": "{\"foo\": \"bar\", \"count\": 42}",
             "xml": "XML",
-            "naive_time": "1970-01-02T00:00:00+01:00"
+            "naive_time": "12:34:56"
           }
         ]
       }
