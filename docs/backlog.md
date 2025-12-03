@@ -26,6 +26,7 @@
 - Documentation: Don't use `print` for debugging purposes
 - Documentation: CrateDB Guide
 - Documentation: Upstream
+- Registry: https://github.com/fivetran/fivetran_connector_sdk/tree/main/connectors
 
 ## Iteration +3
 - Does the SQL code need to escape SQL identifiers?
@@ -36,6 +37,8 @@
 ## Iteration +4
 - Consider using Golang or Java, like others are doing it
   https://github.com/crate/cratedb-fivetran-destination/issues/11
+- Make performance parameters configurable, like `batch_process_size` or `batch_query_size`.
+  See also: https://github.com/fivetran/fivetran_connector_sdk/tree/main/connectors/firebird_db
 
 ## Done
 - Make it work
