@@ -64,19 +64,12 @@ Start gRPC destination server.
 cratedb-fivetran-destination
 ```
 
-[Install the gcloud CLI] and start [Fivetran destination tester].
+[Install the gcloud CLI], authenticate, and start the [Fivetran destination tester].
 ```shell
 gcloud auth configure-docker us-docker.pkg.dev
 ```
 ```shell
-docker run --rm -it \
-  --mount type=bind,source=$(pwd)/tests/data,target=/data \
-  -a STDIN -a STDOUT -a STDERR \
-  -e WORKING_DIR=$(pwd)/tests/data \
-  -e GRPC_HOSTNAME=host.docker.internal \
-  --network=host \
-  us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:2.25.0131.001 \
-  --tester-type destination --port 50052
+fivetran-sdk-tester --directory=./tests/data/fivetran_canonical
 ```
 
 ## Building
