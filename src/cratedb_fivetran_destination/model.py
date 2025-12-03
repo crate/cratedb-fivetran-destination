@@ -1,6 +1,7 @@
 import typing as t
 from textwrap import dedent
 
+import dateutil
 import sqlalchemy as sa
 from attr import Factory
 from attrs import define
@@ -74,6 +75,7 @@ class TypeMap:
         # CrateDB can not store `DATE` types, so converge to `TIMESTAMP`.
         DataType.NAIVE_DATE: sa.TIMESTAMP(),
         DataType.NAIVE_DATETIME: sa.TIMESTAMP(),
+        DataType.NAIVE_TIME: sa.TIMESTAMP(),
         DataType.UTC_DATETIME: sa.TIMESTAMP(),
         # TODO: The parameters are coming from the API, here `input_fivetran.json`.
         #       How to loop them into this type resolution machinery?
@@ -82,7 +84,6 @@ class TypeMap:
         DataType.STRING: sa.String(),
         DataType.JSON: ObjectTypeImpl(),
         DataType.XML: sa.String(),
-        DataType.NAIVE_TIME: sa.TIMESTAMP(),
     }
 
     cratedb_map = {
@@ -109,6 +110,8 @@ class TypeMap:
         # sa.DateTime: DataType.NAIVE_DATETIME,
         sa.DateTime: DataType.UTC_DATETIME,
         sa.DATETIME: DataType.UTC_DATETIME,
+        sa.Time: DataType.NAIVE_TIME,
+        sa.TIME: DataType.NAIVE_TIME,
         sa.Numeric: DataType.DECIMAL,
         sa.DECIMAL: DataType.DECIMAL,
         sa.LargeBinary: DataType.BINARY,
@@ -154,6 +157,27 @@ class FivetranKnowledge:
                 rm_list.append(key)
         for rm in rm_list:
             record.pop(rm)
+
+
+class CrateDBKnowledge:
+    """
+    Manage special knowledge about CrateDB.
+
+    CrateDB can't store values of the `TIME` type, so we selected to store it as `DATETIME`
+    This routine converges the value.
+    """
+
+    @classmethod
+    def replace_values(cls, request, record):
+        for column in request.table.columns:
+            if column.type == common_pb2.DataType.NAIVE_TIME and column.name in record:
+                obj = dateutil.parser.parse(record[column.name])
+                obj = obj.replace(year=1970, month=1, day=1)
+                # Calculate milliseconds since midnight (timezone-independent).
+                ms = (
+                    obj.hour * 3600 + obj.minute * 60 + obj.second
+                ) * 1000 + obj.microsecond // 1000
+                record[column.name] = str(ms)
 
 
 @define

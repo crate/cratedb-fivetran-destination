@@ -14,6 +14,7 @@ from cratedb_fivetran_destination.engine import (
     WriteHistoryBatchProcessor,
 )
 from cratedb_fivetran_destination.model import (
+    CrateDBKnowledge,
     FieldMap,
     FivetranKnowledge,
     FivetranTable,
@@ -366,7 +367,10 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             for record in read_csv.decrypt_file(filename, value):
                 # Rename keys according to field map.
                 record = FieldMap.rename_keys(record)
+                # Replace magic Fivetran values.
                 FivetranKnowledge.replace_values(record)
+                # Adjust values to data types for CrateDB.
+                CrateDBKnowledge.replace_values(request, record)
                 yield record
 
     def _reflect_table(self, schema: str, table: str):
