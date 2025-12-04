@@ -83,13 +83,6 @@ class SchemaMigrationHelper:
             );
             """)
 
-            # Update the newly added row with the `operation_timestamp`.
-            sql_bag.add(f"""
-            UPDATE "{schema}"."{table}"
-            SET "{column_name}" = NULL
-            WHERE {FIVETRAN_START} = '{operation_timestamp}'::TIMESTAMP;
-            """)
-
             # Update the previous record's `_fivetran_end` to `(operation timestamp) - 1ms`
             # and set `_fivetran_active` to `FALSE`.
             sql_bag.add(f"""
