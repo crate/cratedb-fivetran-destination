@@ -354,7 +354,6 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
     def _configure_database(self, url):
         if not self.engine:
             self.engine = sa.create_engine(url, echo=False)
-            self.processor = WriteBatchProcessor(engine=self.engine)
 
     @staticmethod
     def _files_to_records(request, files: t.List[str]):

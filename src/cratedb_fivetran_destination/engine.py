@@ -312,33 +312,23 @@ class WriteBatchProcessor:
         with self.engine.connect() as connection:
             # Apply upsert SQL statements.
             # `INSERT INTO ... ON CONFLICT ... DO UPDATE SET ...`.
-            self.process_records(
+            process_records(
                 connection,
                 upsert_records,
                 lambda record: UpsertStatement(table=table_info, record=record).to_sql(),
             )
 
-            self.process_records(
+            process_records(
                 connection,
                 update_records,
                 lambda record: UpdateStatement(table=table_info, record=record).to_sql(),
             )
 
-            self.process_records(
+            process_records(
                 connection,
                 delete_records,
                 lambda record: DeleteStatement(table=table_info, record=record).to_sql(),
             )
-
-    def process_records(self, connection, records, converter):
-        for record in records:
-            # DML statements are always singular, because they are accompanied with a `record`.
-            sql = converter(record).statements[0]
-            try:
-                connection.execute(sa.text(sql), record)
-            except sa.exc.ProgrammingError as ex:
-                logger.error(f"Processing database operation failed: {ex}")
-                raise
 
 
 @define
@@ -370,30 +360,31 @@ class WriteHistoryBatchProcessor:
                 table=table_info, records=earliest_start_records
             ).to_sql().execute(connection)
 
-            self.process_records(
+            process_records(
                 connection,
                 update_records,
                 lambda record: UpdateStatement(table=table_info, record=record).to_sql(),
             )
 
-            self.process_records(
+            process_records(
                 connection,
                 replace_records,
                 lambda record: UpsertStatement(table=table_info, record=record).to_sql(),
             )
 
-            self.process_records(
+            process_records(
                 connection,
                 delete_records,
                 lambda record: DeleteStatement(table=table_info, record=record).to_sql(),
             )
 
-    def process_records(self, connection, records, converter):
-        for record in records:
-            # DML statements are always singular, because they are accompanied with a `record`.
-            sql = converter(record).statements[0]
-            try:
-                connection.execute(sa.text(sql), record)
-            except sa.exc.ProgrammingError as ex:
-                logger.error(f"Processing database operation failed: {ex}")
-                raise
+
+def process_records(connection, records, converter):
+    for record in records:
+        # DML statements are always singular, because they are accompanied with a `record`.
+        sql = converter(record).statements[0]
+        try:
+            connection.execute(sa.text(sql), record)
+        except sa.exc.ProgrammingError as ex:
+            logger.error(f"Processing database operation failed: {ex}")
+            raise
