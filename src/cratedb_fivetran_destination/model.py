@@ -171,7 +171,13 @@ class CrateDBKnowledge:
     def replace_values(cls, request, record):
         for column in request.table.columns:
             if column.type == common_pb2.DataType.NAIVE_TIME and column.name in record:
-                obj = dateutil.parser.parse(record[column.name])
+                try:
+                    obj = dateutil.parser.parse(record[column.name])
+                except (ValueError, dateutil.parser.ParserError) as e:
+                    raise ValueError(
+                        f"Invalid NAIVE_TIME value '{record[column.name]}' "
+                        f"for column '{column.name}': {e}"
+                    ) from e
                 obj = obj.replace(year=1970, month=1, day=1)
                 # Calculate milliseconds since midnight (timezone-independent).
                 ms = (
