@@ -1,6 +1,5 @@
 import subprocess
 import threading
-from textwrap import dedent
 from time import sleep
 from unittest import mock
 
@@ -10,13 +9,13 @@ from sqlalchemy.sql.type_api import UserDefinedType
 from sqlalchemy.testing.util import drop_all_tables
 from sqlalchemy_cratedb import ObjectType
 
-from cratedb_fivetran_destination.testing import SDK_TESTER_OCI
+from cratedb_fivetran_destination.testing import SDK_TESTER_OCI, get_sdk_tester_command
 from tests.conftest import unblock_all_tables
 
 pytestmark = pytest.mark.sdktester
 
 
-def run(command: str, background: bool = False):
+def run(command, background: bool = False):
     if background:
         return subprocess.Popen(command, shell=True)  # noqa: S602
     subprocess.check_call(command, stderr=subprocess.STDOUT, shell=True)  # noqa: S602
@@ -56,17 +55,7 @@ def services(request):
     t = threading.Thread(target=starter)
     t.start()
 
-    cmd = dedent(f"""
-    docker run --rm \
-      --mount type=bind,source={data_folder},target=/data \
-      -a STDIN -a STDOUT -a STDERR \
-      -e WORKING_DIR={data_folder} \
-      -e GRPC_HOSTNAME=host.docker.internal \
-      --network=host \
-      --add-host=host.docker.internal:host-gateway \
-      {oci_image} \
-      --tester-type destination --port 50052
-    """)
+    cmd = get_sdk_tester_command(directory=data_folder)
     processes.append(run(cmd, background=True))
     sleep(6)
 

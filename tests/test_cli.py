@@ -9,7 +9,7 @@ def cli_runner() -> CliRunner:
     return CliRunner()
 
 
-def test_cli_version(cli_runner, mocker):
+def test_cli_version(cli_runner):
     """
     CLI test: Invoke `cratedb-fivetran-destination --version`.
     """
@@ -32,3 +32,18 @@ def test_cli_real_mocked(cli_runner, mocker):
         catch_exceptions=False,
     )
     assert result.exit_code == 0
+
+
+def test_cli_sdk_tester(cli_runner):
+    """
+    Probe running the SDK tester on an invalid directory for code coverage purposes.
+    """
+    from cratedb_fivetran_destination.testing import cli
+
+    result = cli_runner.invoke(
+        cli,
+        args=["--directory", "/UNKNOWN"],
+        catch_exceptions=False,
+    )
+    assert result.exit_code == 2
+    assert "Invalid value for '--directory'" in result.output
