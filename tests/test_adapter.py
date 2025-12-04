@@ -4,7 +4,7 @@ import pytest
 import sqlalchemy as sa
 
 from cratedb_fivetran_destination import __version__
-from cratedb_fivetran_destination.engine import Processor
+from cratedb_fivetran_destination.engine import WriteBatchProcessor
 from cratedb_fivetran_destination.model import TableInfo
 from cratedb_fivetran_destination.util import format_log_message, setup_logging
 from fivetran_sdk import common_pb2, destination_sdk_pb2
@@ -339,9 +339,119 @@ def test_api_alter_table_change_primary_key_name(engine, capsys):
     )
 
 
+def test_api_migrate_add_column_in_history_mode_operation_timestamp_wrong(engine):
+    """
+    Invoke gRPC `Migrate::add_column_in_history_mode` operation with wrong operation_timestamp.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    destination = CrateDBDestinationImpl()
+
+    with engine.connect() as conn:
+        conn.execute(
+            sa.text("""
+        CREATE TABLE testdrive.foo (
+            id INT,
+            "__fivetran_synced" TIMESTAMP WITHOUT TIME ZONE,
+            "__fivetran_start" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+            "__fivetran_end" TIMESTAMP WITHOUT TIME ZONE,
+            "__fivetran_active" BOOLEAN
+        )
+        """)
+        )
+        conn.execute(
+            sa.text("""
+        INSERT INTO testdrive.foo (id, __fivetran_start, __fivetran_active)
+        VALUES (42, '2005-05-24T20:57:00Z', TRUE);
+        """)
+        )
+
+    # Invoke gRPC API method under test.
+    config = {"url": "crate://"}
+    response = destination.Migrate(
+        request=destination_sdk_pb2.MigrateRequest(
+            configuration=config,
+            details=destination_sdk_pb2.MigrationDetails(
+                schema="testdrive",
+                table="foo",
+                add=destination_sdk_pb2.AddOperation(
+                    add_column_in_history_mode=destination_sdk_pb2.AddColumnInHistoryMode(
+                        column="data",
+                        column_type=common_pb2.DataType.STRING,
+                        default_value="foo",
+                        operation_timestamp="2005-05-23T20:57:00Z",
+                    ),
+                ),
+            ),
+        ),
+        context=destination_sdk_pb2.MigrateResponse(),
+    )
+
+    # Validate outcome.
+    assert response.success is False
+    pattern = "`operation_timestamp` .+ must be after `max\\(_fivetran_start\\)` .+"
+    assert re.match(pattern, response.warning.message), (
+        f"{response.warning.message} did not match pattern"
+    )
+
+
+def test_api_migrate_drop_column_in_history_mode_operation_timestamp_wrong(engine):
+    """
+    Invoke gRPC `Migrate::drop_column_in_history_mode` operation with wrong operation_timestamp.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    destination = CrateDBDestinationImpl()
+
+    with engine.connect() as conn:
+        conn.execute(
+            sa.text("""
+        CREATE TABLE testdrive.foo (
+            id INT,
+            "__fivetran_synced" TIMESTAMP WITHOUT TIME ZONE,
+            "__fivetran_start" TIMESTAMP WITHOUT TIME ZONE NOT NULL,
+            "__fivetran_end" TIMESTAMP WITHOUT TIME ZONE,
+            "__fivetran_active" BOOLEAN
+        )
+        """)
+        )
+        conn.execute(
+            sa.text("""
+        INSERT INTO testdrive.foo (id, __fivetran_start, __fivetran_active)
+        VALUES (42, '2005-05-24T20:57:00Z', TRUE);
+        """)
+        )
+
+    # Invoke gRPC API method under test.
+    config = {"url": "crate://"}
+    response = destination.Migrate(
+        request=destination_sdk_pb2.MigrateRequest(
+            configuration=config,
+            details=destination_sdk_pb2.MigrationDetails(
+                schema="testdrive",
+                table="foo",
+                drop=destination_sdk_pb2.DropOperation(
+                    drop_column_in_history_mode=destination_sdk_pb2.DropColumnInHistoryMode(
+                        column="data",
+                        operation_timestamp="2005-05-23T20:57:00Z",
+                    ),
+                ),
+            ),
+        ),
+        context=destination_sdk_pb2.MigrateResponse(),
+    )
+
+    # Validate outcome.
+    assert response.success is False
+    pattern = "`operation_timestamp` .+ must be after `max\\(_fivetran_start\\)` .+"
+    assert re.match(pattern, response.warning.message), (
+        f"{response.warning.message} did not match pattern"
+    )
+
+
 def test_processor_failing(engine):
     table_info = TableInfo(fullname="unknown.unknown", primary_keys=["id"])
-    p = Processor(engine=engine)
+    p = WriteBatchProcessor(engine=engine)
     with pytest.raises(sa.exc.ProgrammingError) as ex:
         p.process(
             table_info=table_info,
