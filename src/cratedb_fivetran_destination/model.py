@@ -1,10 +1,12 @@
 import typing as t
 from textwrap import dedent
 
+import dateutil
 import sqlalchemy as sa
 from attr import Factory
 from attrs import define
 from sqlalchemy_cratedb import ObjectType
+from sqlalchemy_cratedb.type.object import ObjectTypeImpl
 
 from cratedb_fivetran_destination.dictx import OrderedDictX
 from fivetran_sdk import common_pb2
@@ -73,15 +75,15 @@ class TypeMap:
         # CrateDB can not store `DATE` types, so converge to `TIMESTAMP`.
         DataType.NAIVE_DATE: sa.TIMESTAMP(),
         DataType.NAIVE_DATETIME: sa.TIMESTAMP(),
+        DataType.NAIVE_TIME: sa.TIMESTAMP(),
         DataType.UTC_DATETIME: sa.TIMESTAMP(),
         # TODO: The parameters are coming from the API, here `input_fivetran.json`.
         #       How to loop them into this type resolution machinery?
         DataType.DECIMAL: sa.DECIMAL(6, 3),
         DataType.BINARY: sa.Text(),
         DataType.STRING: sa.String(),
-        DataType.JSON: ObjectType,
+        DataType.JSON: ObjectTypeImpl(),
         DataType.XML: sa.String(),
-        DataType.NAIVE_TIME: sa.TIMESTAMP(),
     }
 
     cratedb_map = {
@@ -108,11 +110,14 @@ class TypeMap:
         # sa.DateTime: DataType.NAIVE_DATETIME,
         sa.DateTime: DataType.UTC_DATETIME,
         sa.DATETIME: DataType.UTC_DATETIME,
+        sa.Time: DataType.NAIVE_TIME,
+        sa.TIME: DataType.NAIVE_TIME,
         sa.Numeric: DataType.DECIMAL,
         sa.DECIMAL: DataType.DECIMAL,
         sa.LargeBinary: DataType.BINARY,
         sa.BINARY: DataType.BINARY,
         ObjectType: DataType.JSON,
+        ObjectTypeImpl: DataType.JSON,
         # FIXME: What about Arrays?
     }
 
@@ -154,6 +159,33 @@ class FivetranKnowledge:
             record.pop(rm)
 
 
+class CrateDBKnowledge:
+    """
+    Manage special knowledge about CrateDB.
+
+    CrateDB can't store values of the `TIME` type, so we selected to store it as `DATETIME`
+    This routine converges the value.
+    """
+
+    @classmethod
+    def replace_values(cls, request, record):
+        for column in request.table.columns:
+            if column.type == common_pb2.DataType.NAIVE_TIME and column.name in record:
+                try:
+                    obj = dateutil.parser.parse(record[column.name])
+                except (ValueError, dateutil.parser.ParserError) as e:
+                    raise ValueError(
+                        f"Invalid NAIVE_TIME value '{record[column.name]}' "
+                        f"for column '{column.name}': {e}"
+                    ) from e
+                obj = obj.replace(year=1970, month=1, day=1)
+                # Calculate milliseconds since midnight (timezone-independent).
+                ms = (
+                    obj.hour * 3600 + obj.minute * 60 + obj.second
+                ) * 1000 + obj.microsecond // 1000
+                record[column.name] = str(ms)
+
+
 @define
 class TableInfo:
     """
@@ -189,8 +221,15 @@ class SqlBag:
     def __bool__(self):
         return bool(self.statements)
 
-    def add(self, sql: str):
-        self.statements.append(dedent(sql).strip())
+    def add(self, sql: t.Union[str, "SqlBag", None]):
+        if sql is None:
+            return self
+        if isinstance(sql, str):
+            self.statements.append(dedent(sql).strip())
+        elif isinstance(sql, SqlBag):
+            self.statements += sql.statements
+        else:
+            raise TypeError(f'Input SQL must be str or SqlBag, not "{type(sql).__name__}"')
         return self
 
     def execute(self, connection: sa.Connection):

@@ -87,7 +87,7 @@ RECORD_REFERENCE = dict(  # noqa: C408
     string="Hotzenplotz",
     json={"count": 42, "foo": "bar"},
     xml="XML",
-    naive_time=86400000,
+    naive_time=45296000,
     __fivetran_synced=mock.ANY,
     __fivetran_id="zyx-987-abc",
 )
@@ -149,6 +149,19 @@ def test_integration_fivetran_migrations_dml(capfd, services):
 
     assert "Describe Table: transaction" in err
     assert "Describe Table: transaction_renamed" in err
+
+
+@pytest.mark.parametrize("services", ["./tests/data/fivetran_migrations_sync"], indirect=True)
+def test_integration_fivetran_migrations_sync(capfd, services):
+    """
+    Verify the Fivetran destination tester runs to completion with Fivetran test data.
+    """
+
+    # Read out stdout and stderr.
+    out, err = capfd.readouterr()
+
+    assert "Describe Table: transaction" in err
+    assert "Describe Table: transaction_history" in err
 
 
 @pytest.mark.parametrize("services", ["./tests/data/cratedb_canonical"], indirect=True)
