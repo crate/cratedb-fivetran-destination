@@ -15,7 +15,7 @@ orjson==3.11.5
 protobuf==6.33.2
 pycryptodome==3.23.0
 setuptools==80.9.0
-soupsieve==2.8
+soupsieve==2.8.1
 sqlalchemy==2.0.45
 sqlalchemy-cratedb==0.42.0.dev2
 toolz==1.1.0
