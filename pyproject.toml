@@ -101,7 +101,7 @@ optional-dependencies.release = [
 optional-dependencies.test = [
   "coverage<8",
   "pretend<2",
-  "pytest<9",
+  "pytest<10",
   "pytest-mock<4",
 ]
 urls."Release Notes" = "https://github.com/crate/cratedb-fivetran-destination/releases"
