@@ -7,6 +7,7 @@
 - Implemented `AlterTableRecreateStatements` for recreating a table
   with a new schema, used for processing primary key column changes.
 - Added support for `AlterTable::drop_columns` operation.
+- Build: Added `main.py` application entrypoint and `build.sh` files
 
 ## v0.0.3 - 2025-05-23
 - Dependencies: Updated to `sqlalchemy-cratedb==0.42.0.dev2`
