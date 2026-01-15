@@ -117,7 +117,6 @@ class SchemaMigrationHelper:
                     {"operation_timestamp": operation_timestamp},
                 )
             )
-
             with self.engine.connect() as conn:
                 sql_bag.execute(conn)
 
