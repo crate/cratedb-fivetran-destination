@@ -3,11 +3,12 @@ build-backend = "setuptools.build_meta"
 requires = [
   "grpcio-tools<1.77",
   "setuptools>=42",
-  "versioningit",
 ]
 
 [project]
 name = "cratedb-fivetran-destination"
+version = "0.0.4.dev0"
+
 description = "CrateDB Fivetran Destination"
 readme = "README.md"
 keywords = [
@@ -66,10 +67,6 @@ classifiers = [
   "Topic :: Text Processing :: Indexing",
   "Topic :: Text Processing :: Linguistic",
   "Topic :: Utilities",
-]
-
-dynamic = [
-  "version",
 ]
 
 dependencies = [
@@ -183,11 +180,6 @@ install_types = true
 non_interactive = true
 no_strict_optional = true
 pretty = true
-
-[tool.versioningit.vcs]
-method = "git-archive"
-default-tag = "v0.0.0"
-describe-subst = "$Format:%(describe:tags,match=v*)$"
 
 # ===================
 # Tasks configuration
