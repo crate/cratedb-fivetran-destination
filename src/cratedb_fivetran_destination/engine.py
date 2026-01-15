@@ -6,7 +6,14 @@ from attr import Factory
 from attrs import define
 from toolz import dissoc
 
-from cratedb_fivetran_destination.model import FieldMap, SqlBag, TableAddress, TableInfo, TypeMap
+from cratedb_fivetran_destination.model import (
+    FieldMap,
+    SqlBag,
+    SqlStatement,
+    TableAddress,
+    TableInfo,
+    TypeMap,
+)
 from cratedb_fivetran_destination.schema_migration_helper import (
     FIVETRAN_ACTIVE,
     FIVETRAN_END,
@@ -218,7 +225,7 @@ class EarliestStartHistoryStatements:
         sql.add(self.update_history_active())
         return sql
 
-    def hard_delete_with_timestamp(self) -> t.Optional[str]:
+    def hard_delete_with_timestamp(self) -> t.Optional[SqlStatement]:
         """
         Generate DELETE statements such as:
 
@@ -228,25 +235,25 @@ class EarliestStartHistoryStatements:
          OR ("id" = 3 AND "_fivetran_start" >= '1680784300234567890')
 
         This procedure combines primary key equality checks with a timestamp comparison
-        for each row, matching the behavior of the Java `writeDelete` method which uses
+        for each row, matching the behaviour of the Java `writeDelete` method which uses
         AND conditions between primary keys and the timestamp filter.
-
-        TODO: Use parameterized queries instead of string interpolation.
-              The primary key values and timestamps are directly interpolated into SQL strings
-              using f-strings. Consider refactoring to use parameterized queries similar to
-              `WriteBatchProcessor.process_records()` which uses
-              `connection.execute(sa.text(sql), record)`. The current approach makes it difficult
-              to properly escape values and could cause issues with special characters in data.
         """
         # Build primary key equality conditions and timestamp condition (AND).
         conditions = []
-        for record in self.records_list:
+        params = {}
+        for index, record in enumerate(self.records_list):
             condition = []
-            for pk in self.table.primary_keys:
+            for pk_index, pk in enumerate(self.table.primary_keys):
                 if pk == FIVETRAN_START:
                     continue
-                condition.append(f"\"{pk}\" = '{record[pk]}'")
-            condition.append(f"\"{FIVETRAN_START}\" >= '{record[FIVETRAN_START]}'::TIMESTAMP")
+                param_name = f"pk{index}{pk_index}"
+                condition.append(f'"{pk}" = :{param_name}')
+                params[param_name] = record[pk]
+
+            param_name = f"ts{index}"
+            condition.append(f'"{FIVETRAN_START}" >= CAST(:{param_name} AS TIMESTAMP)')
+            params[param_name] = record[FIVETRAN_START]
+
             conditions.append(" AND ".join(condition))
 
         if not conditions:
@@ -254,7 +261,8 @@ class EarliestStartHistoryStatements:
 
         # Build row conditions (OR).
         conditions = [f"({condition})" for condition in conditions]
-        return f"DELETE FROM {self.table.fullname} WHERE {' OR '.join(conditions)}"  # noqa: S608
+        sql = f"DELETE FROM {self.table.fullname} WHERE {' OR '.join(conditions)}"  # noqa: S608
+        return SqlStatement(sql, parameters=params)
 
     def update_history_active(self) -> SqlBag:
         """
@@ -280,21 +288,33 @@ class EarliestStartHistoryStatements:
               be less efficient.
         """
         sql_bag = SqlBag()
-        for record in self.records_list:
+        for index, record in enumerate(self.records_list):
             condition = []
-            for pk in self.table.primary_keys:
+            params = {}
+            for pk_index, pk in enumerate(self.table.primary_keys):
                 if pk == FIVETRAN_START:
                     continue
-                condition.append(f"\"{pk}\" = '{record[pk]}'")
-            sql_bag.add(f"""
+                param_name = f"pk{index}{pk_index}"
+                condition.append(f'"{pk}" = :{param_name}')
+                params[param_name] = record[pk]
+
+            ts_param_name = f"ts{index}"
+            params[ts_param_name] = record[FIVETRAN_START]
+
+            sql_bag.add(
+                SqlStatement(
+                    f"""
             UPDATE {self.table.fullname}
             SET
                 {FIVETRAN_ACTIVE} = FALSE,
-                {FIVETRAN_END} = '{record[FIVETRAN_START]}'::TIMESTAMP - INTERVAL '1 millisecond'
+                {FIVETRAN_END} = CAST(:{ts_param_name} AS TIMESTAMP) - INTERVAL '1 millisecond'
             WHERE
                 {FIVETRAN_ACTIVE} = TRUE
             AND {" AND ".join(condition)}
-            """)  # noqa: S608
+            """,  # noqa: S608
+                    params,
+                )
+            )
         return sql_bag
 
 
@@ -382,7 +402,7 @@ class WriteHistoryBatchProcessor:
 def process_records(connection, records, converter):
     for record in records:
         # DML statements are always singular, because they are accompanied with a `record`.
-        sql = converter(record).statements[0]
+        sql = str(converter(record).statements[0])
         try:
             connection.execute(sa.text(sql), record)
         except sa.exc.ProgrammingError as ex:

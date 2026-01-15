@@ -22,7 +22,7 @@ def test_sqlbag_add_wrong_none():
 def test_sqlbag_add_wrong_type():
     with pytest.raises(TypeError) as excinfo:
         SqlBag().add(42)
-    excinfo.match(re.escape('Input SQL must be str or SqlBag, not "int"'))
+    excinfo.match(re.escape('Input SQL must be str, SqlBag, or SqlStatement, not "int"'))
 
 
 def test_cratedb_knowledge_invalid_time():

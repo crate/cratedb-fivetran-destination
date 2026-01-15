@@ -211,30 +211,43 @@ class TableAddress:
 
 
 @define
+class SqlStatement:
+    expression: str
+    parameters: t.Dict[str, t.Any] = Factory(dict)
+
+    def __str__(self) -> str:
+        return self.expression
+
+
+@define
 class SqlBag:
     """
     A little bag of multiple SQL statements.
     """
 
-    statements: t.List[str] = Factory(list)
+    statements: t.List[SqlStatement] = Factory(list)
 
     def __bool__(self):
         return bool(self.statements)
 
-    def add(self, sql: t.Union[str, "SqlBag", None]):
+    def add(self, sql: t.Union[str, "SqlBag", SqlStatement, None]):
         if sql is None:
             return self
         if isinstance(sql, str):
-            self.statements.append(dedent(sql).strip())
+            self.statements.append(SqlStatement(dedent(sql).strip()))
+        elif isinstance(sql, SqlStatement):
+            self.statements.append(sql)
         elif isinstance(sql, SqlBag):
             self.statements += sql.statements
         else:
-            raise TypeError(f'Input SQL must be str or SqlBag, not "{type(sql).__name__}"')
+            raise TypeError(
+                f'Input SQL must be str, SqlBag, or SqlStatement, not "{type(sql).__name__}"'
+            )
         return self
 
     def execute(self, connection: sa.Connection):
-        for sql in self.statements:
-            connection.execute(sa.text(sql))
+        for stmt in self.statements:
+            connection.execute(sa.text(stmt.expression), parameters=stmt.parameters)
 
 
 class FivetranTable:

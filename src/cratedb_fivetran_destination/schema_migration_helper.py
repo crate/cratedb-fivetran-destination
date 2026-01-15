@@ -5,7 +5,7 @@ from copy import deepcopy
 
 import sqlalchemy as sa
 
-from cratedb_fivetran_destination.model import FieldMap, SqlBag, TypeMap
+from cratedb_fivetran_destination.model import FieldMap, SqlBag, SqlStatement, TypeMap
 from cratedb_fivetran_destination.util import LOG_INFO, LOG_WARNING, log_message
 from fivetran_sdk import common_pb2, destination_sdk_pb2
 
@@ -67,33 +67,41 @@ class SchemaMigrationHelper:
             sql_bag = SqlBag()
 
             # Insert new rows to record the history of the DDL operation.
-            # TODO: The `operation_timestamp` is directly interpolated into SQL strings.
-            #       Consider using parameterized queries.
-            sql_bag.add(f"""
+            sql_bag.add(
+                SqlStatement(
+                    f"""
             INSERT INTO "{schema}"."{table}" ({", ".join(all_columns)})
             (
               SELECT
                 {", ".join(unchanged_columns)},
                 NULL AS "{column_name}",
-                '{operation_timestamp}'::TIMESTAMP AS {FIVETRAN_START}
+                CAST(:operation_timestamp AS TIMESTAMP) AS {FIVETRAN_START}
               FROM "{schema}"."{table}"
               WHERE {FIVETRAN_ACTIVE} = TRUE
                 AND "{column_name}" IS NOT NULL
-                AND {FIVETRAN_START} < '{operation_timestamp}'::TIMESTAMP
+                AND {FIVETRAN_START} < CAST(:operation_timestamp AS TIMESTAMP)
             );
-            """)
+            """,
+                    {"operation_timestamp": operation_timestamp},
+                )
+            )
 
             # Update the previous record's `_fivetran_end` to `(operation timestamp) - 1ms`
             # and set `_fivetran_active` to `FALSE`.
-            sql_bag.add(f"""
+            sql_bag.add(
+                SqlStatement(
+                    f"""
             UPDATE "{schema}"."{table}"
                SET
-                 {FIVETRAN_END} = '{operation_timestamp}'::TIMESTAMP - INTERVAL '1 millisecond',
+                 {FIVETRAN_END} = CAST(:operation_timestamp AS TIMESTAMP) - INTERVAL '1 millisecond',
                  {FIVETRAN_ACTIVE} = FALSE
                WHERE {FIVETRAN_ACTIVE} = TRUE
                  AND "{column_name}" IS NOT NULL
-                 AND {FIVETRAN_START} < '{operation_timestamp}'::TIMESTAMP;
-            """)
+                 AND {FIVETRAN_START} < CAST(:operation_timestamp AS TIMESTAMP);
+            """,
+                    {"operation_timestamp": operation_timestamp},
+                )
+            )
 
             # TODO: Review this: It mitigates a severe error raised by
             #       the Fivetran SDK tester, but is it actually intended?
@@ -266,31 +274,39 @@ class SchemaMigrationHelper:
             )
 
             # Insert new rows to record the history of the DDL operation.
-            # TODO: `default_value` is directly interpolated without escaping. If it contains single
-            #        quotes or other SQL metacharacters, this will cause syntax errors or injection.
-            sql_bag.add(f"""
+            sql_bag.add(
+                SqlStatement(
+                    f"""
             INSERT INTO "{schema}"."{table}" ({", ".join(all_columns)})
             (
               SELECT
                 {", ".join(unchanged_columns)},
-                '{default_value}'::{column_type} AS "{column_name}",
-                '{operation_timestamp}'::TIMESTAMP AS {FIVETRAN_START}
+                CAST(:default_value AS {column_type}) AS "{column_name}",
+                CAST(:operation_timestamp AS TIMESTAMP) AS {FIVETRAN_START}
               FROM "{schema}"."{table}"
               WHERE {FIVETRAN_ACTIVE} = TRUE
-                AND {FIVETRAN_START} < '{operation_timestamp}'::TIMESTAMP
+                AND {FIVETRAN_START} < CAST(:operation_timestamp AS TIMESTAMP)
             );
-            """)
+            """,
+                    {"default_value": default_value, "operation_timestamp": operation_timestamp},
+                )
+            )
 
             # Deactivate original active records (those without the new column set),
             # by updating the previous active record's `_fivetran_end` to
             # `(operation timestamp) - 1ms` and set `_fivetran_active` to `FALSE`.
-            sql_bag.add(f"""
+            sql_bag.add(
+                SqlStatement(
+                    f"""
             UPDATE "{schema}"."{table}"
-            SET {FIVETRAN_END} = '{operation_timestamp}'::TIMESTAMP - INTERVAL '1 millisecond',
+            SET {FIVETRAN_END} = CAST(:operation_timestamp AS TIMESTAMP) - INTERVAL '1 millisecond',
                 {FIVETRAN_ACTIVE} = FALSE
             WHERE {FIVETRAN_ACTIVE} = TRUE
-              AND {FIVETRAN_START} < '{operation_timestamp}'::TIMESTAMP;
-            """)
+              AND {FIVETRAN_START} < CAST(:operation_timestamp AS TIMESTAMP);
+            """,
+                    {"operation_timestamp": operation_timestamp},
+                )
+            )
             with self.engine.connect() as conn:
                 sql_bag.execute(conn)
 
