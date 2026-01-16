@@ -12,9 +12,7 @@ def test_earliest_start_history_statements():
 
 
 def test_schema_migration_helper_validate_history_table(engine):
-    # FIXME: Remove `table_map`. This is part of the simulation.
-    table_map = {}
-    smh = SchemaMigrationHelper(engine, table_map)
+    smh = SchemaMigrationHelper(engine)
 
     # Create an empty table to trigger the error condition.
     with engine.connect() as conn:

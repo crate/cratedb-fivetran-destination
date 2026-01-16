@@ -32,9 +32,6 @@ logger = logging.getLogger()
 
 
 class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServicer):
-    # FIXME: Remove. This is part of the simulation.
-    table_map: t.Dict[str, FivetranTable] = {}
-
     def __init__(self):
         self.metadata = sa.MetaData()
         self.engine: sa.Engine = None
@@ -300,19 +297,13 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
     def Migrate(self, request, context):
         """
-        Example implementation of the new Migrate RPC introduced for schema migration support.
-        This method inspects which migration operation (oneof) was requested and logs / handles it.
-        For demonstration, all recognized operations return `success`.
+        Implementation of the new Migrate RPC introduced for schema migration support.
 
         :param request: The migration request contains details of the operation.
         :param context: gRPC context
-
-        Note: This is just for demonstration, so no logic for migration is implemented
-              rather different migration methods are just manipulating table_map to simulate
-              the migration operations.
         """
         self._configure_database(request.configuration.get("url"))
-        migration_helper = SchemaMigrationHelper(self.engine, CrateDBDestinationImpl.table_map)
+        migration_helper = SchemaMigrationHelper(self.engine)
 
         details = request.details
         schema = details.schema

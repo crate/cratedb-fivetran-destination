@@ -339,7 +339,110 @@ def test_api_alter_table_change_primary_key_name(engine, capsys):
     )
 
 
-def test_api_migrate_add_column_in_history_mode_operation_timestamp_wrong(engine, capsys):
+def migration_request(**migration_kwargs):
+    """
+    A shortcut utility function to create a gRPC MigrateRequest instance.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    # Invoke gRPC API method under test.
+    config = {"url": "crate://"}
+    destination = CrateDBDestinationImpl()
+    return destination.Migrate(
+        request=destination_sdk_pb2.MigrateRequest(
+            configuration=config,
+            details=destination_sdk_pb2.MigrationDetails(**migration_kwargs),
+        ),
+        context=destination_sdk_pb2.MigrateResponse(),
+    )
+
+
+def test_api_migrate_missing_operation(engine, capsys):
+    """
+    Invoke gRPC `Migrate` without operation.
+    """
+
+    # Invoke gRPC API method under test.
+    response = migration_request()
+
+    # Validate outcome.
+    assert response.success is False
+    assert response.unsupported is True
+
+    # Validate log output.
+    out, err = capsys.readouterr()
+    assert "[Migrate] Unsupported or missing operation" in out
+
+
+def test_api_migrate_add_without_entity(engine, capsys):
+    """
+    Invoke `SchemaMigrationHelper::handle_add` without entity.
+    """
+
+    # Invoke gRPC API method under test.
+    response = migration_request(add=destination_sdk_pb2.AddOperation())
+
+    # Validate outcome.
+    assert response.success is False
+    assert response.unsupported is True
+
+    # Validate log output.
+    out, err = capsys.readouterr()
+    assert "[Migrate:Add] No add entity specified" in out
+
+
+def test_api_migrate_copy_without_entity(engine, capsys):
+    """
+    Invoke `SchemaMigrationHelper::handle_copy` without entity.
+    """
+
+    # Invoke gRPC API method under test.
+    response = migration_request(copy=destination_sdk_pb2.CopyOperation())
+
+    # Validate outcome.
+    assert response.success is False
+    assert response.unsupported is True
+
+    # Validate log output.
+    out, err = capsys.readouterr()
+    assert "[Migrate:Copy] No copy entity specified" in out
+
+
+def test_api_migrate_drop_without_entity(engine, capsys):
+    """
+    Invoke `SchemaMigrationHelper::handle_drop` without entity.
+    """
+
+    # Invoke gRPC API method under test.
+    response = migration_request(drop=destination_sdk_pb2.DropOperation())
+
+    # Validate outcome.
+    assert response.success is False
+    assert response.unsupported is True
+
+    # Validate log output.
+    out, err = capsys.readouterr()
+    assert "[Migrate:Drop] No drop entity specified" in out
+
+
+def test_api_migrate_rename_without_entity(engine, capsys):
+    """
+    Invoke `SchemaMigrationHelper::handle_rename` without entity.
+    """
+
+    # Invoke gRPC API method under test.
+    response = migration_request(rename=destination_sdk_pb2.RenameOperation())
+
+    # Validate outcome.
+    assert response.success is False
+    assert response.unsupported is True
+
+    # Validate log output.
+    out, err = capsys.readouterr()
+    assert "[Migrate:Rename] No rename entity specified" in out
+
+
+def test_api_migrate_add_column_in_history_mode_operation_timestamp_wrong(engine):
     """
     Invoke gRPC `Migrate::add_column_in_history_mode` operation with wrong operation_timestamp.
     """
