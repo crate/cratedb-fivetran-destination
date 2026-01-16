@@ -72,6 +72,19 @@ gcloud auth configure-docker us-docker.pkg.dev
 fivetran-sdk-tester --directory=./tests/data/fivetran_canonical
 ```
 
+## Updates
+
+### SDK updates
+
+Please regularly check for updates to the Fivetran SDK and
+SDK tester.
+
+- Title:    Runtime: Update Fivetran SDK to commit `18e037c`
+  Examples: c2cf7a7502, 14fd432f4
+
+- Title:    Testing: Update to `sdk-tester:2.25.1105.001`
+  Examples: 46f52c114d, 318147314
+
 ## Building
 
 ### Dependencies
