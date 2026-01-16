@@ -5,6 +5,8 @@ on:
     branches: [ main ]
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * *'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -31,7 +33,7 @@ jobs:
 
     services:
       cratedb:
-        image: crate/crate:nightly
+        image: docker.io/crate/crate:nightly
         ports:
           - 4200:4200
           - 5432:5432
