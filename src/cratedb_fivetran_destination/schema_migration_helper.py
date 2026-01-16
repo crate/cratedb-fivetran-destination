@@ -103,15 +103,6 @@ class SchemaMigrationHelper:
                 )
             )
 
-            # TODO: Review this: It mitigates a severe error raised by
-            #       the Fivetran SDK tester, but is it actually intended?
-            # INFO:   Fivetran-Tester-Process: Verifying if migration is success. Triggering describeTable for table: transaction_history
-            # SEVERE: Fivetran-Tester-Process: Failed to process file: schema_migrations_input_sync_modes.json - Column 'desc' still exists after drop operation in history mode.
-            sql_bag.add(f"""
-            ALTER TABLE "{schema}"."{table}"
-            DROP COLUMN "{column_name}";
-            """)
-
             with self.engine.connect() as conn:
                 sql_bag.execute(conn)
 
