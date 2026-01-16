@@ -281,18 +281,6 @@ class SchemaMigrationHelper:
             );
             """)
 
-            # Update the newly added rows with the `default_value` and `operation_timestamp`.
-            # TODO: Remove? Is it really needed? It looks redundant to the operation above.
-            '''
-            sql_bag.add(f"""
-            UPDATE "{schema}"."{table}"
-            SET "{column_name}" = '{default_value}',
-                {FIVETRAN_START} = '{operation_timestamp}'
-            WHERE {FIVETRAN_ACTIVE} = TRUE
-              AND {FIVETRAN_START} = '{operation_timestamp}'
-            """)
-            '''
-
             # Deactivate original active records (those without the new column set),
             # by updating the previous active record's `_fivetran_end` to
             # `(operation timestamp) - 1ms` and set `_fivetran_active` to `FALSE`.
