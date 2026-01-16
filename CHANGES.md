@@ -9,6 +9,7 @@
 - Added support for `AlterTable::drop_columns` operation.
 - Build: Added `main.py` application entrypoint and `build.sh` files
 - Runtime: Updated Fivetran SDK to commit `76b1422`
+- Testing: Updated to `sdk-tester:2.26.0113.001`
 
 ## v0.0.3 - 2025-05-23
 - Dependencies: Updated to `sqlalchemy-cratedb==0.42.0.dev2`

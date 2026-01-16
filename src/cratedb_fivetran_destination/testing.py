@@ -11,7 +11,7 @@ logger = logging.getLogger()
 
 
 SDK_TESTER_OCI = (
-    "us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:2.25.1118.001"
+    "us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:2.26.0113.001"
 )
 
 
