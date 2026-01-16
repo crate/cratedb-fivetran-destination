@@ -86,6 +86,21 @@ class SchemaMigrationHelper:
                 )
             )
 
+            # Update the newly added row with the `operation_timestamp`.
+            # This step is important in case of source connector sends multiple DROP_COLUMN_IN_HISTORY_MODE
+            # operations with the same operation_timestamp. It will ensure, we only record history once
+            # for that timestamp.
+            sql_bag.add(
+                SqlStatement(
+                    f"""
+            UPDATE "{schema}"."{table}"
+            SET "{column_name}" = NULL
+            WHERE {FIVETRAN_START} = CAST(:operation_timestamp AS TIMESTAMP);
+            """,
+                    {"operation_timestamp": operation_timestamp},
+                )
+            )
+
             # Update the previous record's `_fivetran_end` to `(operation timestamp) - 1ms`
             # and set `_fivetran_active` to `FALSE`.
             sql_bag.add(
