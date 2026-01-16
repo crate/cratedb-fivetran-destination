@@ -7,10 +7,22 @@ ARG BUILD=/usr/src
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TERM=linux
 
+# Install the `uv` package manager.
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+
+# Configure build environment.
+ENV PIP_ROOT_USER_ACTION=ignore
+ENV UV_COMPILE_BYTECODE=true
+ENV UV_LINK_MODE=copy
+ENV UV_PYTHON_DOWNLOADS=never
+ENV UV_SYSTEM_PYTHON=true
 
 # Install package builder.
-ENV PIP_ROOT_USER_ACTION=ignore
-RUN pip install build
+RUN \
+    --mount=type=cache,id=pip,target=/root/.cache/pip \
+    --mount=type=cache,id=uv,target=/root/.cache/uv \
+    true \
+    && uv pip install build
 RUN python -m build --version
 
 # Build wheel package.
@@ -25,6 +37,9 @@ ARG BUILD=/usr/src
 # Configure operating system.
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TERM=linux
+
+# Install the `uv` package manager.
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
 # Configure build environment.
 ENV PIP_ROOT_USER_ACTION=ignore
@@ -44,7 +59,6 @@ RUN \
     --mount=type=cache,id=pip,target=/root/.cache/pip \
     --mount=type=cache,id=uv,target=/root/.cache/uv \
     true \
-    && pip install uv \
     && uv tool install --upgrade "$(ls /tmp/*.whl)"
 
 # Copy `selftest.sh` to the image.
