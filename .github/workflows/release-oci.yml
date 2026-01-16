@@ -13,11 +13,11 @@ on:
 
   # Build images on each pull request.
   # Remark: Disabled to conserve CI resources. Use workflow_dispatch for manual builds.
-  # pull_request:
+  pull_request:
 
   # Produce a nightly image every day at 6 a.m. CEST.
-  # schedule:
-  #   - cron: '0 4 * * *'
+  schedule:
+    - cron: '0 6 * * *'
 
   # Allow job to be triggered manually.
   workflow_dispatch:
@@ -34,7 +34,7 @@ env:
 
 jobs:
   build_and_test:
-    runs-on: "ubuntu-22.04"
+    runs-on: "ubuntu-latest"
 
     steps:
       - name: Acquire sources
@@ -64,7 +64,6 @@ jobs:
   oci:
     needs: build_and_test
     runs-on: ubuntu-latest
-    if: ${{ ! (startsWith(github.actor, 'dependabot') || github.event.pull_request.head.repo.fork ) }}
 
     steps:
       - name: Acquire sources
@@ -124,7 +123,7 @@ jobs:
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          push: true
+          push: ${{ ! (startsWith(github.actor, 'dependabot') || github.event.pull_request.head.repo.fork ) }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           sbom: true
