@@ -7,9 +7,6 @@ ARG BUILD=/usr/src
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TERM=linux
 
-# Install prerequisites.
-RUN apt-get update
-RUN apt-get --yes install --no-install-recommends --no-install-suggests git wget
 
 # Install package builder.
 ENV PIP_ROOT_USER_ACTION=ignore
