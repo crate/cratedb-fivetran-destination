@@ -10,6 +10,9 @@ from cratedb_fivetran_destination.util import setup_logging
 logger = logging.getLogger()
 
 
+# Check for recent releases:
+# https://console.cloud.google.com/artifacts/docker/build-286712/us/public-docker-us/sdktesters-v2%2Fsdk-tester?pli=1
+
 SDK_TESTER_OCI = (
     "us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:2.26.0113.001"
 )

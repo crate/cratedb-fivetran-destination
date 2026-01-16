@@ -31,6 +31,8 @@ class FivetranSdk(Command):
 
     def initialize_options(self) -> None:
         # Version pinning by Git reference.
+        # Check for recent releases:
+        # https://github.com/fivetran/fivetran_partner_sdk
         self.fivetran_sdk_tag = "76b1422"
 
         # Where the Python SDK API files will be generated.
