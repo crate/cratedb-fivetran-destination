@@ -73,7 +73,7 @@ RUN \
     --mount=type=cache,id=pip-${TARGETARCH}${TARGETVARIANT},target=/root/.cache/pip \
     --mount=type=cache,id=uv-${TARGETARCH}${TARGETVARIANT},target=/root/.cache/uv \
     true \
-    && uv tool install --upgrade "$(ls /tmp/*.whl)"
+    && uv tool install --upgrade /tmp/*.whl
 
 # Copy `selftest.sh` to the image.
 COPY release/oci/selftest.sh /usr/local/bin
