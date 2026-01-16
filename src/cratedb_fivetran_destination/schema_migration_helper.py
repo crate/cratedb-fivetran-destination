@@ -298,6 +298,21 @@ class SchemaMigrationHelper:
                 )
             )
 
+            # Update the newly added rows with the `default_value` and `operation_timestamp`.
+            # This step is important in case of source connector sends multiple ADD_COLUMN_IN_HISTORY_MODE
+            # operations with the same operation_timestamp. It will ensure, we only record history once
+            # for that timestamp.
+            sql_bag.add(
+                SqlStatement(
+                    f"""
+            UPDATE "{schema}"."{table}"
+            SET "{column_name}" = CAST(:default_value AS {column_type})
+            WHERE {FIVETRAN_START} = CAST(:operation_timestamp AS TIMESTAMP)
+            """,
+                    {"default_value": default_value, "operation_timestamp": operation_timestamp},
+                )
+            )
+
             # Deactivate original active records (those without the new column set),
             # by updating the previous active record's `_fivetran_end` to
             # `(operation timestamp) - 1ms` and set `_fivetran_active` to `FALSE`.
