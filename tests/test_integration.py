@@ -90,6 +90,7 @@ RECORD_REFERENCE = dict(  # noqa: C408
     naive_time=86400000,
     __fivetran_synced=mock.ANY,
     __fivetran_id="zyx-987-abc",
+    __fivetran_deleted=False,
 )
 
 
