@@ -3,6 +3,13 @@ FROM python:3.14-slim-bookworm AS build
 
 ARG BUILD=/usr/src
 
+# Enable concurrent multi-arch builds.
+# https://github.com/docker/buildx/issues/549#issuecomment-1788297892
+ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
+
 # Configure operating system.
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TERM=linux
@@ -19,8 +26,8 @@ ENV UV_SYSTEM_PYTHON=true
 
 # Install package builder.
 RUN \
-    --mount=type=cache,id=pip,target=/root/.cache/pip \
-    --mount=type=cache,id=uv,target=/root/.cache/uv \
+    --mount=type=cache,id=pip-${TARGETARCH}${TARGETVARIANT},target=/root/.cache/pip \
+    --mount=type=cache,id=uv-${TARGETARCH}${TARGETVARIANT},target=/root/.cache/uv \
     true \
     && uv pip install build
 RUN python -m build --version
@@ -33,6 +40,13 @@ RUN python -m build --wheel ${BUILD}
 FROM python:3.14-slim-bookworm AS package
 
 ARG BUILD=/usr/src
+
+# Enable concurrent multi-arch builds.
+# https://github.com/docker/buildx/issues/549#issuecomment-1788297892
+ARG TARGETPLATFORM
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETVARIANT
 
 # Configure operating system.
 ENV DEBIAN_FRONTEND=noninteractive
@@ -56,8 +70,8 @@ COPY --from=build ${BUILD}/dist/*.whl /tmp
 
 # Install package.
 RUN \
-    --mount=type=cache,id=pip,target=/root/.cache/pip \
-    --mount=type=cache,id=uv,target=/root/.cache/uv \
+    --mount=type=cache,id=pip-${TARGETARCH}${TARGETVARIANT},target=/root/.cache/pip \
+    --mount=type=cache,id=uv-${TARGETARCH}${TARGETVARIANT},target=/root/.cache/uv \
     true \
     && uv tool install --upgrade "$(ls /tmp/*.whl)"
 
