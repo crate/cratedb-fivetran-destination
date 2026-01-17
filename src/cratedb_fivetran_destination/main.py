@@ -171,6 +171,10 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
             # TODO: Refactor this _into_ the `AlterTableRecreateStatements` workhorse function.
             temptable = request.table.name + "_alter_tmp"
+            self._drop_table(
+                schema_name=request.schema_name,
+                table_name=temptable,
+            )
             self._create_table(
                 schema_name=request.schema_name,
                 table_name=temptable,
@@ -437,6 +441,10 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
 
         table.create(self.engine)
         return table
+
+    def _drop_table(self, schema_name: str, table_name: str, if_exists: bool = True) -> None:
+        table = sa.Table(table_name, self.metadata, schema=schema_name)
+        table.drop(self.engine, checkfirst=if_exists)
 
 
 def start_server(host: str = "[::]", port: int = 50052, max_workers: int = 1) -> grpc.Server:
