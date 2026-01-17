@@ -34,7 +34,10 @@
                {"id":1, "amount": 100.45, "desc":null, "op_time":"2005-05-23T20:57:00Z"},
                {"id":2, "amount": 150.33, "desc": "two", "op_time":"2005-05-23T20:57:00Z"},
                {"id":3, "amount": 150.33, "desc": "two", "op_time":"2005-05-23T20:57:00Z"},
-               {"id":4, "amount": 150.33, "desc": "two", "op_time":"2005-05-23T20:57:00Z"}
+               {"id":4, "amount": 150.33, "desc": "two", "op_time":"2005-05-23T20:57:00Z"},
+               {"id":10, "amount": 200, "desc": "three", "op_time":"2005-05-26T20:57:00Z"},
+               {"id":10, "amount": 100, "desc": "three", "op_time":"2005-05-26T20:58:00Z"},
+               {"id":20, "amount": 50, "desc": "money", "op_time":"2005-05-26T21:57:00Z"}
             ]
          }
       }
@@ -47,14 +50,14 @@
                "column": "article",
                "data_type": "STRING",
                "default_value": "Ordered article",
-               "operation_timestamp": "2005-05-23T20:57:00Z"
+               "operation_timestamp": "2005-05-28T20:57:00Z"
             }
          ],
          "drop_column_in_history_mode": [
             {
                "table": "transaction_history",
                "column": "desc",
-               "operation_timestamp": "2005-05-23T20:57:00Z"
+               "operation_timestamp": "2005-05-28T20:57:00Z"
             }
          ],
          "copy_table_to_history_mode": [
