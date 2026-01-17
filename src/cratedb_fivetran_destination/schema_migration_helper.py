@@ -473,12 +473,14 @@ class SchemaMigrationHelper:
             https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#soft_delete_to_history
             """
 
+            temptable_name = table + "_migrate_tmp"
+
             # Prologue: Copy table.
             with self.engine.connect() as conn:
-                conn.execute(sa.text(f"DROP TABLE IF EXISTS {schema}.{table}_tmp"))
+                conn.execute(sa.text(f"DROP TABLE IF EXISTS {schema}.{temptable_name}"))
                 metadata = sa.MetaData(schema=schema)
                 found_table = sa.Table(table, metadata, autoload_with=conn)
-                new_table = sa.Table(found_table.name + "_tmp", metadata)
+                new_table = sa.Table(temptable_name, metadata)
                 for col in found_table.columns:
                     new_table.append_column(
                         sa.Column(
@@ -507,7 +509,7 @@ class SchemaMigrationHelper:
                 conn.execute(
                     sa.text(
                         f"""
-                INSERT INTO "{schema}"."{table}_tmp" ({", ".join(column_names)})
+                INSERT INTO "{schema}"."{temptable_name}" ({", ".join(column_names)})
                 (
                   SELECT
                     {", ".join(column_names)}
@@ -540,18 +542,13 @@ class SchemaMigrationHelper:
                 # 3. If soft_deleted_column = _fivetran_deleted, then drop it.
                 if soft_deleted_column == FIVETRAN_DELETED:
                     self.schema_helper.remove_soft_delete_column(
-                        schema, table + "_tmp", FIVETRAN_DELETED
+                        schema, temptable_name, FIVETRAN_DELETED
                     )
 
                 # Epilogue: Activate temporary table.
                 conn.execute(
                     sa.text(f"""
-                ALTER CLUSTER SWAP TABLE "{schema}"."{table}_tmp" TO "{schema}"."{table}"
-                """)
-                )
-                conn.execute(
-                    sa.text(f"""
-                DROP TABLE "{schema}"."{table}_tmp"
+                ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
                 """)
                 )
 
