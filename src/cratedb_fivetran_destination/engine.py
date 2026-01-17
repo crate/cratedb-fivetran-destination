@@ -169,6 +169,14 @@ class AlterTableRecreateStatements:
     columns_new: t.List[common_pb2.Column] = Factory(list)
 
     def to_sql(self) -> SqlBag:
+        # Validate positional mapping assumption
+        if len(self.columns_old) != len(self.columns_new):
+            raise ValueError(
+                f"Column count mismatch: old table has {len(self.columns_old)} columns, "
+                f"new table has {len(self.columns_new)} columns. "
+                f"Recreate operation requires matching column counts."
+            )
+
         sqlbag = SqlBag()
 
         table_real = self.address_effective.fullname
