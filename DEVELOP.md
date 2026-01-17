@@ -87,6 +87,12 @@ SDK tester.
   Source:   https://console.cloud.google.com/artifacts/docker/build-286712/us/public-docker-us/sdktesters-v2%2Fsdk-tester?pli=1
   Examples: 46f52c114d, 318147314
 
+- Title:    Testing: Update SDK tester input files.
+  Examples:
+  Sources:  [input.json], [schema_migrations_input_ddl.json],
+            [schema_migrations_input_ddl.json],
+            [schema_migrations_input_sync_modes.json]
+
 ## Building
 
 ### Dependencies
@@ -127,3 +133,7 @@ poe release
 [Fivetran destination tester]: https://github.com/fivetran/fivetran_sdk/tree/v2/tools/destination-connector-tester
 [Fivetran SDK Development Guide]: https://github.com/fivetran/fivetran_sdk/blob/main/development-guide.md
 [Install the gcloud CLI]: https://cloud.google.com/sdk/docs/install
+[input.json]: https://github.com/fivetran/fivetran_partner_sdk/blob/main/tools/destination-connector-tester/input-files/input.json
+[schema_migrations_input_ddl.json]: https://github.com/fivetran/fivetran_partner_sdk/blob/main/tools/destination-connector-tester/input-files/schema_migrations_input_ddl.json
+[schema_migrations_input_dml.json]: https://github.com/fivetran/fivetran_partner_sdk/blob/main/tools/destination-connector-tester/input-files/schema_migrations_input_dml.json
+[schema_migrations_input_sync_modes.json]: https://github.com/fivetran/fivetran_partner_sdk/blob/main/tools/destination-connector-tester/input-files/schema_migrations_input_sync_modes.json
