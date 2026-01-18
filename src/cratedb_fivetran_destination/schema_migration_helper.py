@@ -26,13 +26,14 @@ class SchemaMigrationHelper:
     def handle_drop(self, drop_op, schema, table, table_obj: common_pb2.Table):
         """
         Handles drop operations (drop table, drop column in history mode).
-
-        - https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#drop_table
-        - https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#drop_column_in_history_mode
         """
         entity_case = drop_op.WhichOneof("entity")
 
         if entity_case == "drop_table":
+            """
+            This migration should drop the specified table.
+            https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#drop_table
+            """
             sql = f'DROP TABLE "{schema}"."{table}"'
             with self.engine.connect() as conn:
                 conn.execute(sa.text(sql))
@@ -41,12 +42,18 @@ class SchemaMigrationHelper:
             return destination_sdk_pb2.MigrateResponse(success=True)
 
         if entity_case == "drop_column_in_history_mode":
+            """
+            This migration records the history of a column drop operation in history mode.
+            Rather than physically dropping the column, it maintains the column with NULL
+            values for new records to preserve historical data.
+            https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#drop_column_in_history_mode
+            """
             drop_column = drop_op.drop_column_in_history_mode
 
             column_name = drop_column.column
             operation_timestamp = drop_column.operation_timestamp
 
-            # Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
+            # 0. Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
             try:
                 self._validate_history_table(schema, table, operation_timestamp)
             except ValueError as e:
@@ -67,7 +74,7 @@ class SchemaMigrationHelper:
 
             sql_bag = SqlBag()
 
-            # Insert new rows to record the history of the DDL operation.
+            # 1. Insert new rows to record the history of the DDL operation.
             sql_bag.add(
                 SqlStatement(
                     f"""
@@ -87,7 +94,7 @@ class SchemaMigrationHelper:
                 )
             )
 
-            # Update the newly added row with the `operation_timestamp`.
+            # 2. Update the newly added row with the `operation_timestamp`.
             # This step is important in case of source connector sends multiple DROP_COLUMN_IN_HISTORY_MODE
             # operations with the same operation_timestamp. It will ensure, we only record history once
             # for that timestamp.
@@ -102,7 +109,7 @@ class SchemaMigrationHelper:
                 )
             )
 
-            # Update the previous record's `_fivetran_end` to `(operation timestamp) - 1ms`
+            # 3. Update the previous record's `_fivetran_end` to `(operation timestamp) - 1ms`
             # and set `_fivetran_active` to `FALSE`.
             sql_bag.add(
                 SqlStatement(
@@ -135,6 +142,10 @@ class SchemaMigrationHelper:
         entity_case = copy_op.WhichOneof("entity")
 
         if entity_case == "copy_table":
+            """
+            This migration should create a new table and copy the data from the source table to the destination table.
+            https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#copy_table
+            """
             copy_table = copy_op.copy_table
             sql = (
                 f'CREATE TABLE "{schema}"."{copy_table.to_table}" '
@@ -150,6 +161,10 @@ class SchemaMigrationHelper:
             return destination_sdk_pb2.MigrateResponse(success=True)
 
         if entity_case == "copy_column":
+            """
+            This migration should add a new column and copy the data from the source column to the destination column.
+            https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#copy_column
+            """
             sql_bag = SqlBag()
             copy_column = copy_op.copy_column
             for col in table_obj.columns:
@@ -159,9 +174,11 @@ class SchemaMigrationHelper:
                     new_col.name = copy_column.to_column
                     table_obj.columns.add().CopyFrom(new_col)
                     type_ = TypeMap.to_cratedb(new_col.type, new_col.params)
+                    # 1. Add the new column with the same type as the old column.
                     sql_bag.add(
                         f'ALTER TABLE "{schema}"."{table}" ADD COLUMN "{new_col.name}" {type_};'
                     )
+                    # 2. Update the new column with the values from the old column.
                     sql_bag.add(f'UPDATE "{schema}"."{table}" SET "{new_col.name}"="{col.name}";')
                     break
 
@@ -199,18 +216,20 @@ class SchemaMigrationHelper:
                     )
                 )
 
-                # Follow steps in the sync mode migration:
+                # 3. Follow steps in the sync mode migration.
                 # - SOFT_DELETE_TO_HISTORY if soft_deleted_column is not null, or
                 # - LIVE_TO_HISTORY in order to migrate it to history mode.
                 self.schema_helper.remove_soft_delete_column(
                     schema, copy_table.to_table, soft_deleted_column
                 )
                 if copy_table.soft_deleted_column:
+                    # TODO: Review -- why not the full shebang?
+                    # self._table_soft_delete_to_history(schema, copy_table.to_table, soft_deleted_column)  # noqa: ERA001
                     self.schema_helper.add_soft_delete_column(
                         schema, copy_table.to_table, soft_deleted_column
                     )
                 else:
-                    self.schema_helper.add_history_mode_columns(schema, copy_table.to_table)
+                    self._table_live_to_history(schema, table)
 
             log_message(
                 LOG_INFO,
@@ -281,7 +300,7 @@ class SchemaMigrationHelper:
 
             sql_bag = SqlBag()
 
-            # Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
+            # 0. Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
             try:
                 self._validate_history_table(schema, table, operation_timestamp)
             except ValueError as e:
@@ -295,7 +314,7 @@ class SchemaMigrationHelper:
                     warning=common_pb2.Warning(message=message),
                 )
 
-            # Add the new column with the specified type.
+            # 1. Add the new column with the specified type.
             sql_bag.add(f"""
             ALTER TABLE "{schema}"."{table}" ADD COLUMN "{column_name}" {column_type};
             """)
@@ -311,7 +330,7 @@ class SchemaMigrationHelper:
             ]
             all_columns = unchanged_columns + [column_name, FIVETRAN_START]
 
-            # Insert new rows to record the history of the DDL operation.
+            # 2. Insert new rows to record the history of the DDL operation.
             sql_bag.add(
                 SqlStatement(
                     f"""
@@ -330,7 +349,7 @@ class SchemaMigrationHelper:
                 )
             )
 
-            # Update the newly added rows with the `default_value` and `operation_timestamp`.
+            # 3. Update the newly added rows with the `default_value` and `operation_timestamp`.
             # This step is important in case of source connector sends multiple ADD_COLUMN_IN_HISTORY_MODE
             # operations with the same operation_timestamp. It will ensure, we only record history once
             # for that timestamp.
@@ -345,6 +364,8 @@ class SchemaMigrationHelper:
                 )
             )
 
+            # 4. Update the previous active record's `_fivetran_end` to `(operation timestamp) - 1ms`
+            #    and set `_fivetran_active` to `FALSE`.
             # Deactivate original active records (those without the new column set),
             # by updating the previous active record's `_fivetran_end` to
             # `(operation timestamp) - 1ms` and set `_fivetran_active` to `FALSE`.
@@ -393,11 +414,13 @@ class SchemaMigrationHelper:
             """
 
             with self.engine.connect() as conn:
+                # 1. Add the column without a default value.
                 conn.execute(
                     sa.text(
                         f'ALTER TABLE "{schema}"."{table}" ADD COLUMN "{new_col.name}" {type_};'
                     ),
                 )
+                # 2. Update the column with the default value.
                 if default_value is not None:
                     conn.execute(
                         sa.text(
@@ -416,7 +439,10 @@ class SchemaMigrationHelper:
         return destination_sdk_pb2.MigrateResponse(unsupported=True)
 
     def handle_update_column_value(self, upd, schema, table):
-        """Handles update column value operation."""
+        """
+        Handles update column value operation.
+        https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#update_column_value_operation
+        """
         with self.engine.connect() as conn:
             conn.execute(
                 sa.text(f'UPDATE "{schema}"."{table}" SET "{upd.column}"=:value;'),  # noqa: S608
@@ -473,84 +499,7 @@ class SchemaMigrationHelper:
             https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#soft_delete_to_history
             """
 
-            temptable_name = table + "_migrate_tmp"
-
-            # Prologue: Copy table.
-            with self.engine.connect() as conn:
-                conn.execute(sa.text(f"DROP TABLE IF EXISTS {schema}.{temptable_name}"))
-                metadata = sa.MetaData(schema=schema)
-                found_table = sa.Table(table, metadata, autoload_with=conn)
-                new_table = sa.Table(temptable_name, metadata)
-                for col in found_table.columns:
-                    new_table.append_column(
-                        sa.Column(
-                            name=col.name,
-                            type_=col.type,
-                            primary_key=col.primary_key,
-                            default=col.default,
-                        )
-                    )
-
-                # 1. Add the history mode columns to the table.
-                new_table.append_column(sa.Column(name=FIVETRAN_START, type_=sa.TIMESTAMP))
-                new_table.append_column(sa.Column(name=FIVETRAN_END, type_=sa.TIMESTAMP))
-                new_table.append_column(
-                    sa.Column(name=FIVETRAN_ACTIVE, type_=sa.BOOLEAN, default=True)
-                )
-
-                for col in new_table.columns:
-                    if col.primary_key:
-                        col.nullable = False
-
-                metadata.create_all(conn, [new_table])
-                conn.commit()
-
-                column_names = [f'"{name}"' for name in found_table.columns.keys()]
-                conn.execute(
-                    sa.text(
-                        f"""
-                INSERT INTO "{schema}"."{temptable_name}" ({", ".join(column_names)})
-                (
-                  SELECT
-                    {", ".join(column_names)}
-                  FROM "{schema}"."{table}"
-                );
-                """
-                    )
-                )
-
-                # 2. Use soft_deleted_column to identify active records and set the values of
-                #    _fivetran_start, _fivetran_end, and _fivetran_active columns appropriately.
-                # TODO: Implement!
-                """
-                UPDATE <schema.table>
-                SET
-                    _fivetran_active = CASE
-                                           WHEN <soft_deleted_column> = TRUE THEN FALSE
-                                           ELSE TRUE
-                                       END,
-                    _fivetran_start = CASE
-                                          WHEN <soft_deleted_column> = TRUE THEN TIMESTAMP '<minTimestamp>'
-                                          ELSE (SELECT MAX(_fivetran_synced) FROM <schema.table>)
-                                      END,
-                    _fivetran_end = CASE
-                                        WHEN <soft_deleted_column> = TRUE THEN TIMESTAMP '<minTimestamp>'
-                                        ELSE TIMESTAMP '<maxTimestamp>'
-                                    END
-                """
-
-                # 3. If soft_deleted_column = _fivetran_deleted, then drop it.
-                if soft_deleted_column == FIVETRAN_DELETED:
-                    self.schema_helper.remove_soft_delete_column(
-                        schema, temptable_name, FIVETRAN_DELETED
-                    )
-
-                # Epilogue: Activate temporary table.
-                conn.execute(
-                    sa.text(f"""
-                ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
-                """)
-                )
+            self._table_soft_delete_to_history(schema, table, soft_deleted_column)
 
             log_message(
                 LOG_INFO,
@@ -583,7 +532,7 @@ class SchemaMigrationHelper:
 
                 # 3. Delete history for all records (delete all versions of each
                 #    unique PK except the latest version).
-                # FIXME: Implement!
+                # FIXME: How to implement this with CrateDB?
                 """
                 DELETE FROM <schema>.<table> AS main_table
                 USING (
@@ -603,6 +552,7 @@ class SchemaMigrationHelper:
                 """
 
                 # 4. Update the soft_deleted_column column based on _fivetran_active.
+                # FIXME: How to implement this with CrateDB?
                 """
                 UPDATE <schema.table>
                 SET <soft_deleted_column> = CASE
@@ -612,6 +562,7 @@ class SchemaMigrationHelper:
                 """
 
                 # 5. Drop the history mode columns.
+                # FIXME: Implement this with CrateDB.
                 """
                 ALTER TABLE <schema.table> DROP COLUMN _fivetran_start,
                                            DROP COLUMN _fivetran_end,
@@ -619,6 +570,7 @@ class SchemaMigrationHelper:
                 """
 
                 # 6. Recreate the primary key constraint if it was dropped in step 1.
+                # FIXME: Implement this with CrateDB.
                 """
                 ALTER TABLE <schema.table> ADD CONSTRAINT <primary_key_constraint> PRIMARY KEY (<columns>);
                 """
@@ -695,24 +647,7 @@ class SchemaMigrationHelper:
             https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#live_to_history
             """
 
-            sql_bag = SqlBag()
-
-            # 1. Add the history mode columns to the table.
-            self.schema_helper.add_history_mode_columns(schema, table)
-
-            # 2. Set all the records as active and set the _fivetran_start, _fivetran_end,
-            #    and _fivetran_active columns appropriately.
-            # TODO: "{FIVETRAN_START}" = NOW()
-            #       Validation failed for __fivetran_start: Updating a primary key is not supported
-            sql_bag.add(f'''
-            UPDATE "{schema}"."{table}"
-            SET
-                "{FIVETRAN_END}" = '9999-12-31 23:59:59',
-                "{FIVETRAN_ACTIVE}" = TRUE;
-            ''')
-
-            with self.engine.connect() as conn:
-                sql_bag.execute(conn)
+            self._table_live_to_history(schema, table)
 
             log_message(
                 LOG_INFO,
@@ -725,6 +660,112 @@ class SchemaMigrationHelper:
             f"[Migrate:TableSyncModeMigration] Unknown migration type for table={schema}.{table}",
         )  # pragma: no cover
         return destination_sdk_pb2.MigrateResponse(unsupported=True)  # pragma: no cover
+
+    def _table_live_to_history(self, schema: str, table: str):
+        """
+        Convert table from live to history mode.
+        """
+
+        # 1. Add the history mode columns to the table.
+        self.schema_helper.add_history_mode_columns(schema, table)
+
+        # 2. Set all the records as active and set the _fivetran_start, _fivetran_end,
+        #    and _fivetran_active columns appropriately.
+        # TODO: "{FIVETRAN_START}" = NOW()
+        #       Validation failed for __fivetran_start: Updating a primary key is not supported
+        #       Maybe this operation also needs copying the taeeassvfx
+        with self.engine.connect() as conn:
+            conn.execute(
+                sa.text(f'''
+                UPDATE
+                    "{schema}"."{table}"
+                SET
+                    "{FIVETRAN_END}" = '9999-12-31 23:59:59',
+                    "{FIVETRAN_ACTIVE}" = TRUE;
+                ''')
+            )
+
+    def _table_soft_delete_to_history(self, schema: str, table: str, soft_deleted_column: str):
+        """
+        Convert table from soft delete to history mode.
+        """
+
+        temptable_name = table + "_migrate_tmp"
+
+        # Prologue: Copy table.
+        with self.engine.connect() as conn:
+            conn.execute(sa.text(f"DROP TABLE IF EXISTS {schema}.{temptable_name}"))
+            metadata = sa.MetaData(schema=schema)
+            found_table = sa.Table(table, metadata, autoload_with=conn)
+            new_table = sa.Table(temptable_name, metadata)
+            for col in found_table.columns:
+                new_table.append_column(
+                    sa.Column(
+                        name=col.name,
+                        type_=col.type,
+                        primary_key=col.primary_key,
+                        default=col.default,
+                    )
+                )
+
+            # 1. Add the history mode columns to the table.
+            new_table.append_column(sa.Column(name=FIVETRAN_START, type_=sa.TIMESTAMP))
+            new_table.append_column(sa.Column(name=FIVETRAN_END, type_=sa.TIMESTAMP))
+            new_table.append_column(sa.Column(name=FIVETRAN_ACTIVE, type_=sa.BOOLEAN, default=True))
+
+            for col in new_table.columns:
+                if col.primary_key:
+                    col.nullable = False
+
+            metadata.create_all(conn, [new_table])
+            conn.commit()
+
+            column_names = [f'"{name}"' for name in found_table.columns.keys()]
+            conn.execute(
+                sa.text(
+                    f"""
+                    INSERT INTO "{schema}"."{temptable_name}" ({", ".join(column_names)})
+                    (
+                      SELECT
+                        {", ".join(column_names)}
+                      FROM "{schema}"."{table}"
+                    );
+                    """
+                )
+            )
+
+            # 2. Use soft_deleted_column to identify active records and set the values of
+            #    _fivetran_start, _fivetran_end, and _fivetran_active columns appropriately.
+            # FIXME: How to implement this with CrateDB?
+            """
+            UPDATE < schema.table>
+            SET
+                _fivetran_active = CASE
+                                    WHEN <soft_deleted_column> = TRUE THEN FALSE
+                                    ELSE TRUE
+                                    END,
+                _fivetran_start = CASE
+                                    WHEN <soft_deleted_column> = TRUE THEN TIMESTAMP '<minTimestamp>'
+                                    ELSE (SELECT MAX(_fivetran_synced) FROM <schema.table>)
+                                    END,
+                _fivetran_end = CASE
+                                    WHEN <soft_deleted_column> = TRUE THEN TIMESTAMP '<minTimestamp>'
+                                    ELSE TIMESTAMP '<maxTimestamp>'
+                                    END
+            """
+
+            # 3. If soft_deleted_column = _fivetran_deleted, then drop it.
+            if soft_deleted_column == FIVETRAN_DELETED:
+                self.schema_helper.remove_soft_delete_column(
+                    schema, temptable_name, FIVETRAN_DELETED
+                )
+
+            # Epilogue: Activate temporary table.
+            conn.execute(
+                sa.text(f"""
+            ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
+            """)
+            )
 
     def _validate_history_table(self, schema, table, operation_timestamp):
         """
