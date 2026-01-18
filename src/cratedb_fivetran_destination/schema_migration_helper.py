@@ -266,7 +266,7 @@ class SchemaMigrationHelper:
             https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#rename_column
             """
             rename_column = rename_op.rename_column
-            sql = f'ALTER TABLE "{schema}"."{table}" RENAME "{rename_column.from_column}" TO "{rename_column.to_column}";'
+            sql = f'ALTER TABLE "{schema}"."{table}" RENAME COLUMN "{rename_column.from_column}" TO "{rename_column.to_column}";'
             with self.engine.connect() as conn:
                 conn.execute(sa.text(sql))
 

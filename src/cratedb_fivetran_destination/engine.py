@@ -135,7 +135,7 @@ class AlterTableInplaceStatements:
             )
             sqlbag.add(f'ALTER TABLE {self.table.fullname} DROP "{column_name}";')
             sqlbag.add(
-                f'ALTER TABLE {self.table.fullname} RENAME "{column_name_temporary}" TO "{column_name}";'  # noqa: E501
+                f'ALTER TABLE {self.table.fullname} RENAME COLUMN "{column_name_temporary}" TO "{column_name}";'  # noqa: E501
             )
 
         # Translate "new column" instructions into `ALTER TABLE ... ADD ...` clauses.
