@@ -558,6 +558,38 @@ class SchemaMigrationHelper:
                 """)
                 )
                 '''
+                # Implementation suggested by CodeRabbit.
+                #
+                # This approach avoids the `USING` clause entirely and should
+                # work well with CrateDB's SQL dialect.
+                #
+                # How it works:
+                # - The subquery groups by primary key columns and selects the
+                #   `MAX(__fivetran_start)` for each group (the latest version).
+                # - The outer `DELETE` removes all rows where the tuple
+                #   `(PK columns, __fivetran_start)` is **not** in that set of
+                #   latest versions.
+                # - This effectively keeps only the most recent row for each
+                #   unique PK combination.
+                #
+                primary_keys = self.schema_helper.get_primary_key_names(schema, table)
+                pk_names = [f'"{name}"' for name in primary_keys]
+
+                if pk_names:
+                    # Build the column list for the tuple comparison.
+                    tuple_columns = ", ".join(pk_names) + f', "{FIVETRAN_START}"'
+                    group_by_columns = ", ".join(pk_names)
+
+                    conn.execute(
+                        sa.text(f"""
+                    DELETE FROM "{schema}"."{table}"
+                    WHERE ({tuple_columns}) NOT IN (
+                        SELECT {group_by_columns}, MAX("{FIVETRAN_START}")
+                        FROM "{schema}"."{table}"
+                        GROUP BY {group_by_columns}
+                    )
+                    """)
+                    )
 
                 # 4. Update the soft_deleted_column column based on _fivetran_active.
                 conn.execute(
