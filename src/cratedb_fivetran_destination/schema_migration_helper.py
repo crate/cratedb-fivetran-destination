@@ -14,6 +14,7 @@ FIVETRAN_START = "__fivetran_start"
 FIVETRAN_END = "__fivetran_end"
 FIVETRAN_ACTIVE = "__fivetran_active"
 FIVETRAN_DELETED = "__fivetran_deleted"
+FIVETRAN_SYNCED = "__fivetran_synced"
 
 
 class SchemaMigrationHelper:
@@ -223,13 +224,11 @@ class SchemaMigrationHelper:
                     schema, copy_table.to_table, soft_deleted_column
                 )
                 if copy_table.soft_deleted_column:
-                    # TODO: Review -- why not the full shebang?
-                    # self._table_soft_delete_to_history(schema, copy_table.to_table, soft_deleted_column)  # noqa: ERA001
-                    self.schema_helper.add_soft_delete_column(
+                    self._table_soft_delete_to_history(
                         schema, copy_table.to_table, soft_deleted_column
                     )
                 else:
-                    self._table_live_to_history(schema, table)
+                    self._table_live_to_history(schema, copy_table.to_table)
 
             log_message(
                 LOG_INFO,
@@ -418,7 +417,7 @@ class SchemaMigrationHelper:
                 conn.execute(
                     sa.text(
                         f'ALTER TABLE "{schema}"."{table}" ADD COLUMN "{new_col.name}" {type_};'
-                    ),
+                    )
                 )
                 # 2. Update the column with the default value.
                 if default_value is not None:
@@ -516,6 +515,7 @@ class SchemaMigrationHelper:
             column_names = self.schema_helper.get_column_names(schema, table)
 
             # 1. Drop the primary key constraint if it exists.
+            #    Remark: Not possible with CrateDB.
             """
             self.schema_helper.drop_primary_key_constraint(schema, table)
             """
@@ -525,52 +525,57 @@ class SchemaMigrationHelper:
                 if FIVETRAN_DELETED not in column_names:
                     conn.execute(
                         sa.text(f"""
-                        ALTER TABLE "{schema}"."{table}"
-                        ADD COLUMN "{FIVETRAN_DELETED}" BOOLEAN DEFAULT FALSE
-                        """)
+                    ALTER TABLE "{schema}"."{table}"
+                    ADD COLUMN "{FIVETRAN_DELETED}" BOOLEAN DEFAULT FALSE
+                    """)
                     )
 
                 # 3. Delete history for all records (delete all versions of each
                 #    unique PK except the latest version).
                 # FIXME: How to implement this with CrateDB?
-                """
-                DELETE FROM <schema>.<table> AS main_table
+                #        SQLParseException[line 3:17: mismatched input 'USING' expecting {<EOF>, ';'}]
+                '''
+                primary_keys = self.schema_helper.get_primary_key_names(schema, table)
+                pk_names = [f'"{name}"' for name in primary_keys]
+                where_constraints = []
+                for pk_name in pk_names:
+                    where_constraints.append(f"main_table.{pk_name} = temp_alias.{pk_name}")
+                conn.execute(
+                    sa.text(f"""
+                DELETE FROM "{schema}"."{table}" AS main_table
                 USING (
-                    SELECT <<pk1>, <pk2>, ...>,
-                            MAX("_fivetran_start") AS "MAX_FIVETRAN_START"
-                    FROM <schema>.<table>
-                    GROUP BY <pk1>, <pk2>, ...
+                    SELECT {", ".join(pk_names)}
+                            MAX("{FIVETRAN_START}") AS "MAX_FIVETRAN_START"
+                    FROM "{schema}"."{table}"
+                    GROUP BY {", ".join(pk_names)}
                     ) as temp_alias
                 WHERE
-                    (main_table.<pk1> = temp_alias.<pk1>
-                    AND main_table.<pk2> = temp_alias.<pk2>)
-                    -- ... for all PKs
+                    ({" AND ".join(where_constraints)})
                 AND (
-                    main_table."_fivetran_start" <> temp_alias."MAX_FIVETRAN_START"
-                    OR main_table."_fivetran_start" IS NULL
+                    main_table."{FIVETRAN_START}" <> temp_alias."MAX_FIVETRAN_START"
+                    OR main_table."{FIVETRAN_START}" IS NULL
                 );
-                """
+                """)
+                )
+                '''
 
                 # 4. Update the soft_deleted_column column based on _fivetran_active.
-                # FIXME: How to implement this with CrateDB?
-                """
-                UPDATE <schema.table>
-                SET <soft_deleted_column> = CASE
-                                            WHEN _fivetran_active = TRUE THEN FALSE
-                                            ELSE TRUE
-                                        END;
-                """
+                conn.execute(
+                    sa.text(f"""
+                UPDATE "{schema}"."{table}"
+                SET "{soft_deleted_column}" = CASE
+                                              WHEN {FIVETRAN_ACTIVE} = TRUE THEN FALSE
+                                              ELSE TRUE
+                                              END;
+                """)
+                )
 
                 # 5. Drop the history mode columns.
-                # FIXME: Implement this with CrateDB.
-                """
-                ALTER TABLE <schema.table> DROP COLUMN _fivetran_start,
-                                           DROP COLUMN _fivetran_end,
-                                           DROP COLUMN _fivetran_active;
-                """
+                self.schema_helper.remove_history_mode_columns(schema, table)
 
                 # 6. Recreate the primary key constraint if it was dropped in step 1.
-                # FIXME: Implement this with CrateDB.
+                #    Remark: Not possible with CrateDB, because primary key
+                #            constraints can only be created on empty tables.
                 """
                 ALTER TABLE <schema.table> ADD CONSTRAINT <primary_key_constraint> PRIMARY KEY (<columns>);
                 """
@@ -590,6 +595,7 @@ class SchemaMigrationHelper:
             sql_bag = SqlBag()
 
             # 1. Drop the primary key constraint if it exists.
+            #    Remark: Not possible with CrateDB.
             """
             self.schema_helper.drop_primary_key_constraint(schema, table)
             """
@@ -605,6 +611,8 @@ class SchemaMigrationHelper:
             self.schema_helper.remove_history_mode_columns(schema, table)
 
             # 4. Recreate the primary key constraint if it was dropped in step 1.
+            #    Remark: Not possible with CrateDB, because primary key
+            #            constraints can only be created on empty tables.
             '''
             sql_bag.add(f"""
             ALTER TABLE "{schema}"."{table}" ADD CONSTRAINT pk PRIMARY KEY ("{FIVETRAN_START}");
@@ -673,7 +681,7 @@ class SchemaMigrationHelper:
         #    and _fivetran_active columns appropriately.
         # TODO: "{FIVETRAN_START}" = NOW()
         #       Validation failed for __fivetran_start: Updating a primary key is not supported
-        #       Maybe this operation also needs copying the taeeassvfx
+        #       Maybe this operation also needs _copying_ the table, like others?
         with self.engine.connect() as conn:
             conn.execute(
                 sa.text(f'''
@@ -687,7 +695,9 @@ class SchemaMigrationHelper:
 
     def _table_soft_delete_to_history(self, schema: str, table: str, soft_deleted_column: str):
         """
-        Convert table from soft delete to history mode.
+        Convert table from SOFT DELETE to HISTORY mode.
+
+        https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#soft_delete_to_history
         """
 
         temptable_name = table + "_migrate_tmp"
@@ -713,6 +723,12 @@ class SchemaMigrationHelper:
             new_table.append_column(sa.Column(name=FIVETRAN_END, type_=sa.TIMESTAMP))
             new_table.append_column(sa.Column(name=FIVETRAN_ACTIVE, type_=sa.BOOLEAN, default=True))
 
+            # TODO: Review: Why could this column be missing?
+            #       Column __fivetran_deleted unknown.
+            new_table.append_column(
+                sa.Column(name=soft_deleted_column, type_=sa.BOOLEAN), replace_existing=True
+            )
+
             for col in new_table.columns:
                 if col.primary_key:
                     col.nullable = False
@@ -720,39 +736,41 @@ class SchemaMigrationHelper:
             metadata.create_all(conn, [new_table])
             conn.commit()
 
-            column_names = [f'"{name}"' for name in found_table.columns.keys()]
+            column_names = [f'"{col.name}"' for col in found_table.columns]
             conn.execute(
                 sa.text(
                     f"""
-                    INSERT INTO "{schema}"."{temptable_name}" ({", ".join(column_names)})
-                    (
-                      SELECT
-                        {", ".join(column_names)}
-                      FROM "{schema}"."{table}"
-                    );
-                    """
+            INSERT INTO "{schema}"."{temptable_name}" ({", ".join(column_names)})
+            (
+              SELECT
+                {", ".join(column_names)}
+              FROM "{schema}"."{table}"
+            );
+            """
                 )
             )
 
             # 2. Use soft_deleted_column to identify active records and set the values of
             #    _fivetran_start, _fivetran_end, and _fivetran_active columns appropriately.
-            # FIXME: How to implement this with CrateDB?
-            """
-            UPDATE < schema.table>
+            # TODO: Clarify if '<minTimestamp>' and '<maxTimestamp>' has been implemented correctly.
+            conn.execute(
+                sa.text(f"""
+            UPDATE "{schema}"."{temptable_name}"
             SET
-                _fivetran_active = CASE
-                                    WHEN <soft_deleted_column> = TRUE THEN FALSE
+                {FIVETRAN_ACTIVE} = CASE
+                                    WHEN {soft_deleted_column} = TRUE THEN FALSE
                                     ELSE TRUE
                                     END,
-                _fivetran_start = CASE
-                                    WHEN <soft_deleted_column> = TRUE THEN TIMESTAMP '<minTimestamp>'
-                                    ELSE (SELECT MAX(_fivetran_synced) FROM <schema.table>)
+                {FIVETRAN_START}  = CASE
+                                    WHEN {soft_deleted_column} = TRUE THEN (SELECT MIN({FIVETRAN_START}) FROM "{schema}"."{temptable_name}")
+                                    ELSE (SELECT MAX({FIVETRAN_SYNCED}) FROM "{schema}"."{temptable_name}")
                                     END,
-                _fivetran_end = CASE
-                                    WHEN <soft_deleted_column> = TRUE THEN TIMESTAMP '<minTimestamp>'
-                                    ELSE TIMESTAMP '<maxTimestamp>'
+                {FIVETRAN_END}    = CASE
+                                    WHEN {soft_deleted_column} = TRUE THEN (SELECT MIN({FIVETRAN_END}) FROM "{schema}"."{temptable_name}")
+                                    ELSE (SELECT MAX({FIVETRAN_END}) FROM "{schema}"."{temptable_name}")
                                     END
-            """
+            """)
+            )
 
             # 3. If soft_deleted_column = _fivetran_deleted, then drop it.
             if soft_deleted_column == FIVETRAN_DELETED:
@@ -806,6 +824,12 @@ class TableSchemaHelper:
             inspector = sa.inspect(conn)
             columns = inspector.get_columns(table_name=table, schema=schema)
             return [col["name"] for col in columns]
+
+    def get_primary_key_names(self, schema: str, table: str) -> t.List[str]:
+        with self.engine.connect() as conn:
+            metadata = sa.MetaData(schema=schema)
+            pk_columns = sa.Table(table, metadata, autoload_with=conn).primary_key.columns
+            return [col.name for col in pk_columns]
 
     def drop_primary_key_constraint(self, schema: str, table: str) -> bool:  # pragma: no cover
         """
@@ -873,6 +897,7 @@ class TableSchemaHelper:
         sql_bag = SqlBag()
 
         # Note: `DROP COLUMN "{FIVETRAN_START}"` does not work, because it's part of the primary key.
+        # TODO: Discuss -- should all relevant operations (also) use a "copy table" operations instead?
         sql_bag.add(f"""
         ALTER TABLE "{schema}"."{table}"
         DROP COLUMN "{FIVETRAN_END}",
