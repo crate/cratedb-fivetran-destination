@@ -512,37 +512,30 @@ class SchemaMigrationHelper:
             https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#history_to_soft_delete
             """
 
-            column_names = self.schema_helper.get_column_names(schema, table)
-
             # 1. Drop the primary key constraint if it exists.
-            #    Remark: Not possible with CrateDB.
-            """
-            self.schema_helper.drop_primary_key_constraint(schema, table)
-            """
+            #    CrateDB can't drop PK constraints,
+            #    so it needs to copy the table to a temporary table.
+            temptable_name = table + "_history_to_soft_delete_tmp"
+            self._table_copy_schema(schema, table, temptable_name, drop_pk_constraints=True)
+            self._table_copy_data(schema, table, temptable_name)
+
+            # 2. If _fivetran_deleted doesn't exist, then add it.
+            self.schema_helper.add_soft_delete_column(schema, temptable_name, soft_deleted_column)
 
             with self.engine.connect() as conn:
-                # 2. If _fivetran_deleted doesn't exist, then add it.
-                if soft_deleted_column not in column_names:
-                    conn.execute(
-                        sa.text(f"""
-                    ALTER TABLE "{schema}"."{table}"
-                    ADD COLUMN "{soft_deleted_column}" BOOLEAN DEFAULT FALSE
-                    """)
-                    )
-
                 # 3. Delete history for all records (delete all versions of each
                 #    unique PK except the latest version).
                 # FIXME: How to implement this with CrateDB?
                 #        SQLParseException[line 3:17: mismatched input 'USING' expecting {<EOF>, ';'}]
                 '''
-                primary_keys = self.schema_helper.get_primary_key_names(schema, table)
+                primary_keys = self.schema_helper.get_primary_key_names(schema, temptable_name)
                 pk_names = [f'"{name}"' for name in primary_keys]
                 where_constraints = []
                 for pk_name in pk_names:
                     where_constraints.append(f"main_table.{pk_name} = temp_alias.{pk_name}")
                 conn.execute(
                     sa.text(f"""
-                DELETE FROM "{schema}"."{table}" AS main_table
+                DELETE FROM "{schema}"."{temptable_name}" AS main_table
                 USING (
                     SELECT {", ".join(pk_names)}
                             MAX("{FIVETRAN_START}") AS "MAX_FIVETRAN_START"
@@ -572,7 +565,7 @@ class SchemaMigrationHelper:
                 # - This effectively keeps only the most recent row for each
                 #   unique PK combination.
                 #
-                primary_keys = self.schema_helper.get_primary_key_names(schema, table)
+                primary_keys = self.schema_helper.get_primary_key_names(schema, temptable_name)
                 pk_names = [f'"{name}"' for name in primary_keys]
 
                 if pk_names:
@@ -582,7 +575,7 @@ class SchemaMigrationHelper:
 
                     conn.execute(
                         sa.text(f"""
-                    DELETE FROM "{schema}"."{table}"
+                    DELETE FROM "{schema}"."{temptable_name}"
                     WHERE ({tuple_columns}) NOT IN (
                         SELECT {group_by_columns}, MAX("{FIVETRAN_START}")
                         FROM "{schema}"."{table}"
@@ -594,7 +587,7 @@ class SchemaMigrationHelper:
                 # 4. Update the soft_deleted_column column based on _fivetran_active.
                 conn.execute(
                     sa.text(f"""
-                UPDATE "{schema}"."{table}"
+                UPDATE "{schema}"."{temptable_name}"
                 SET "{soft_deleted_column}" = CASE
                                               WHEN {FIVETRAN_ACTIVE} = TRUE THEN FALSE
                                               ELSE TRUE
@@ -603,7 +596,7 @@ class SchemaMigrationHelper:
                 )
 
                 # 5. Drop the history mode columns.
-                self.schema_helper.remove_history_mode_columns(schema, table)
+                self.schema_helper.remove_history_mode_columns(schema, temptable_name)
 
                 # 6. Recreate the primary key constraint if it was dropped in step 1.
                 #    Remark: Not possible with CrateDB, because primary key
@@ -611,6 +604,13 @@ class SchemaMigrationHelper:
                 """
                 ALTER TABLE <schema.table> ADD CONSTRAINT <primary_key_constraint> PRIMARY KEY (<columns>);
                 """
+
+                # Epilogue: Activate temporary table.
+                conn.execute(
+                    sa.text(f"""
+                ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
+                """)
+                )
 
             log_message(
                 LOG_INFO,
@@ -625,30 +625,40 @@ class SchemaMigrationHelper:
             """
 
             # 1. Drop the primary key constraint if it exists.
-            #    Remark: Not possible with CrateDB.
-            """
-            self.schema_helper.drop_primary_key_constraint(schema, table)
-            """
+            #    CrateDB can't drop PK constraints,
+            #    so it needs to copy the table to a temporary table.
+            temptable_name = table + "_history_to_live_tmp"
 
-            # 2. If keep_deleted_rows is FALSE, then drop rows which are not active (skip if keep_deleted_rows is TRUE).
-            if not op.keep_deleted_rows:
-                with self.engine.connect() as conn:
+            with self.engine.connect() as conn:
+                # Prologue: Copy table to temporary table.
+                self._table_copy_schema(schema, table, temptable_name, drop_pk_constraints=True)
+                self._table_copy_data(schema, table, temptable_name)
+
+                # 2. If keep_deleted_rows is FALSE, then drop rows which are not active (skip if keep_deleted_rows is TRUE).
+                if not op.keep_deleted_rows:
                     conn.execute(
                         sa.text(f"""
-                DELETE FROM "{schema}"."{table}"
-                WHERE "{FIVETRAN_ACTIVE}" = FALSE;
-                """)
+                    DELETE FROM "{schema}"."{temptable_name}"
+                    WHERE "{FIVETRAN_ACTIVE}" = FALSE;
+                    """)
                     )
 
-            # 3. Drop the history mode columns.
-            self.schema_helper.remove_history_mode_columns(schema, table)
+                # 3. Drop the history mode columns.
+                self.schema_helper.remove_history_mode_columns(schema, temptable_name)
 
-            # 4. Recreate the primary key constraint if it was dropped in step 1.
-            #    Remark: Not possible with CrateDB, because primary key
-            #            constraints can only be created on empty tables.
-            """
-            ALTER TABLE "{schema}"."{table}" ADD CONSTRAINT pk PRIMARY KEY ("{FIVETRAN_START}");
-            """
+                # 4. Recreate the primary key constraint if it was dropped in step 1.
+                #    Remark: Not possible with CrateDB, because primary key
+                #            constraints can only be created on empty tables.
+                """
+                ALTER TABLE "{schema}"."{table}" ADD CONSTRAINT pk PRIMARY KEY ("{FIVETRAN_START}");
+                """
+
+                # Epilogue: Activate temporary table.
+                conn.execute(
+                    sa.text(f"""
+                ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
+                """)
+                )
 
             log_message(
                 LOG_INFO,
@@ -711,7 +721,7 @@ class SchemaMigrationHelper:
         with self.engine.connect() as conn:
             # Prologue: Copy table to temporary table.
             temptable_name = table + "_live_to_history_tmp"
-            self._table_copy_schema(schema, table, temptable_name, remove_pks=True)
+            self._table_copy_schema(schema, table, temptable_name, drop_pk_constraints=True)
             self._table_copy_data(schema, table, temptable_name)
 
             # 1. Add the history mode columns to the table.
@@ -816,7 +826,11 @@ class SchemaMigrationHelper:
                 )
 
     def _table_copy_schema(
-        self, schema: str, source_tablename: str, target_tablename: str, remove_pks: bool = False
+        self,
+        schema: str,
+        source_tablename: str,
+        target_tablename: str,
+        drop_pk_constraints: bool = False,
     ) -> sa.Table:
         with self.engine.connect() as conn:
             conn.execute(sa.text(f'DROP TABLE IF EXISTS "{schema}"."{target_tablename}"'))
@@ -828,7 +842,7 @@ class SchemaMigrationHelper:
                     sa.Column(
                         name=col.name,
                         type_=col.type,
-                        primary_key=col.primary_key and not remove_pks,
+                        primary_key=col.primary_key and not drop_pk_constraints,
                         default=col.default,
                     )
                 )
@@ -909,7 +923,9 @@ class TableSchemaHelper:
         if column_name not in column_names:
             with self.engine.connect() as conn:
                 conn.execute(
-                    sa.text(f'ALTER TABLE "{schema}"."{table}" ADD COLUMN "{column_name}" BOOLEAN')
+                    sa.text(
+                        f'ALTER TABLE "{schema}"."{table}" ADD COLUMN "{column_name}" BOOLEAN DEFAULT FALSE'
+                    )
                 )
 
     def remove_soft_delete_column(self, schema: str, table: str, column_name: str):
@@ -945,10 +961,12 @@ class TableSchemaHelper:
         """Removes history mode columns from a table."""
         sql_bag = SqlBag()
 
-        # Note: `DROP COLUMN "{FIVETRAN_START}"` does not work, because it's part of the primary key.
-        # TODO: Discuss -- should all relevant operations (also) use a "copy table" operations instead?
+        # Note: `DROP COLUMN "{FIVETRAN_START}"` will only work when it's
+        # not part of the primary key. This is currently implemented by
+        # using a table copy operation that drops the pk constraint.
         sql_bag.add(f"""
         ALTER TABLE "{schema}"."{table}"
+        DROP COLUMN "{FIVETRAN_START}",
         DROP COLUMN "{FIVETRAN_END}",
         DROP COLUMN "{FIVETRAN_ACTIVE}";
         """)
