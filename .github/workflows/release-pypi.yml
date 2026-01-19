@@ -8,8 +8,9 @@ on:
     tags:
       - '*'
 
-  # Build packages on each pull request for validation purposes.
+  # Build packages on pull requests to `main` for validation purposes.
   pull_request:
+    branches: [ main ]
 
   # Build packages each night for validation purposes.
   schedule:
