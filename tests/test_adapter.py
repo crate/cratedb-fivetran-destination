@@ -38,7 +38,7 @@ def test_api_test(capsys):
     assert response.failure == ""
 
     # Check log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert format_log_message("Test database connection: foo", newline=True) in out
 
 
@@ -67,7 +67,7 @@ def test_api_configuration_form(capsys):
     assert response.tests[0].name == "connect"
 
     # Check log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert out == format_log_message("Fetching configuration form", newline=True)
 
 
@@ -106,7 +106,7 @@ def test_api_describe_table_found(engine, capsys):
     )
 
     # Check log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert "Completed fetching table info" in out
 
 
@@ -134,7 +134,7 @@ def test_api_describe_table_not_found(capsys):
     assert response.table.columns == []
 
     # Check log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert out == format_log_message(
         "DescribeTable: Table not found: unknown", level="WARNING", newline=True
     )
@@ -172,7 +172,7 @@ def test_api_alter_table_add_column(engine, capsys):
     assert response.warning.message == ""
 
     # Check log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert (
         format_log_message(
             'AlterTable: Successfully altered table: "testdrive"."foo"', newline=True
@@ -216,7 +216,7 @@ def test_api_alter_table_nothing_changed(engine, capsys):
     assert response.warning.message == ""
 
     # Check log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert format_log_message("AlterTable: Nothing changed", newline=True) in out
 
 
@@ -255,7 +255,7 @@ def test_api_alter_table_drop_column_nothing_changed(engine, capsys):
     assert response.warning.message == ""
 
     # Check log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert format_log_message("AlterTable (drop columns): Nothing changed", newline=True) in out
 
 
@@ -290,7 +290,7 @@ def test_api_alter_table_change_primary_key_type(engine, capsys):
     assert response.success is True
 
     # Check log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert (
         format_log_message(
             'AlterTable: Successfully altered table: "testdrive"."foo"', newline=True
@@ -330,7 +330,7 @@ def test_api_alter_table_change_primary_key_name(engine, capsys):
     assert response.success is True
 
     # Check log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert (
         format_log_message(
             'AlterTable: Successfully altered table: "testdrive"."foo"', newline=True
@@ -370,7 +370,7 @@ def test_api_migrate_missing_operation(capsys):
     assert response.unsupported is True
 
     # Validate log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert "[Migrate] Unsupported or missing operation" in out
 
 
@@ -387,7 +387,7 @@ def test_api_migrate_add_without_entity(capsys):
     assert response.unsupported is True
 
     # Validate log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert "[Migrate:Add] No add entity specified" in out
 
 
@@ -404,7 +404,7 @@ def test_api_migrate_copy_without_entity(capsys):
     assert response.unsupported is True
 
     # Validate log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert "[Migrate:Copy] No copy entity specified" in out
 
 
@@ -421,7 +421,7 @@ def test_api_migrate_drop_without_entity(capsys):
     assert response.unsupported is True
 
     # Validate log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert "[Migrate:Drop] No drop entity specified" in out
 
 
@@ -438,7 +438,7 @@ def test_api_migrate_rename_without_entity(capsys):
     assert response.unsupported is True
 
     # Validate log output.
-    out, err = capsys.readouterr()
+    out, _ = capsys.readouterr()
     assert "[Migrate:Rename] No rename entity specified" in out
 
 

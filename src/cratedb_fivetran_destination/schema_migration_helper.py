@@ -701,7 +701,7 @@ class SchemaMigrationHelper:
 
         # Prologue: Copy table.
         with self.engine.connect() as conn:
-            conn.execute(sa.text(f"DROP TABLE IF EXISTS {schema}.{temptable_name}"))
+            conn.execute(sa.text(f'DROP TABLE IF EXISTS "{schema}"."{temptable_name}"'))
             metadata = sa.MetaData(schema=schema)
             found_table = sa.Table(table, metadata, autoload_with=conn)
             new_table = sa.Table(temptable_name, metadata)
@@ -828,12 +828,18 @@ class TableSchemaHelper:
         SQLParseException[Cannot find a CHECK CONSTRAINT named [transaction_history_pkey], available constraints are: []]
         """
         with self.engine.connect() as conn:
-            sql = f"""
+            sql = """
             select table_schema, table_name, constraint_name, constraint_type as type
             from information_schema.table_constraints
-            where table_schema = '{schema}' and table_name = '{table}' and constraint_type = 'PRIMARY KEY'
+            where table_schema = :schema: and table_name = :table and constraint_type = :constraint
             """
-            result = conn.execute(sa.text(sql)).mappings().fetchone()
+            result = (
+                conn.execute(
+                    sa.text(sql), {"schema": schema, "table": table, "constraint": "PRIMARY KEY"}
+                )
+                .mappings()
+                .fetchone()
+            )
             if result is not None:
                 pk_constraint_name = result["constraint_name"]
                 dropped = conn.execute(
