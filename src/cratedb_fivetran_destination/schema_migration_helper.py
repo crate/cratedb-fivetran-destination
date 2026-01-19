@@ -701,78 +701,58 @@ class SchemaMigrationHelper:
     def _table_live_to_history(self, schema: str, table: str):
         """
         Convert table from live to history mode.
+        https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#live_to_history
+
+        Because CrateDB does not support updating primary keys,
+        the following procedure copies the table into a temporary
+        table.
         """
 
-        # 1. Add the history mode columns to the table.
-        self.schema_helper.add_history_mode_columns(schema, table)
-
-        # 2. Set all the records as active and set the _fivetran_start, _fivetran_end,
-        #    and _fivetran_active columns appropriately.
-        # TODO: "{FIVETRAN_START}" = NOW()
-        #       Validation failed for __fivetran_start: Updating a primary key is not supported
-        #       Maybe this operation also needs _copying_ the table, like others?
         with self.engine.connect() as conn:
+            # Prologue: Copy table to temporary table.
+            temptable_name = table + "_live_to_history_tmp"
+            self._table_copy_schema(schema, table, temptable_name, remove_pks=True)
+            self._table_copy_data(schema, table, temptable_name)
+
+            # 1. Add the history mode columns to the table.
+            self.schema_helper.add_history_mode_columns(schema, temptable_name)
+
+            # 2. Set all the records as active and set the _fivetran_start, _fivetran_end,
+            #    and _fivetran_active columns appropriately.
             conn.execute(
                 sa.text(f'''
                 UPDATE
-                    "{schema}"."{table}"
+                    "{schema}"."{temptable_name}"
                 SET
+                    "{FIVETRAN_START}" = NOW(),
                     "{FIVETRAN_END}" = '{MAX_TIMESTAMP}'::TIMESTAMP,
                     "{FIVETRAN_ACTIVE}" = TRUE;
                 ''')
             )
 
+            # Epilogue: Activate temporary table.
+            conn.execute(
+                sa.text(f"""
+            ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
+            """)
+            )
+
     def _table_soft_delete_to_history(self, schema: str, table: str, soft_deleted_column: str):
         """
         Convert table from SOFT DELETE to HISTORY mode.
-
         https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#soft_delete_to_history
         """
 
-        temptable_name = table + "_migrate_tmp"
+        temptable_name = table + "_soft_delete_to_history_tmp"
 
-        # Prologue: Copy table.
+        # Prologue: Copy table to temporary table.
+        self._table_copy_schema(schema, table, temptable_name)
+        self._table_copy_data(schema, table, temptable_name)
+
+        # 1. Add the history mode columns to the table.
+        self.schema_helper.add_history_mode_columns(schema, temptable_name)
+
         with self.engine.connect() as conn:
-            conn.execute(sa.text(f'DROP TABLE IF EXISTS "{schema}"."{temptable_name}"'))
-            metadata = sa.MetaData(schema=schema)
-            found_table = sa.Table(table, metadata, autoload_with=conn)
-            new_table = sa.Table(temptable_name, metadata)
-            for col in found_table.columns:
-                new_table.append_column(
-                    sa.Column(
-                        name=col.name,
-                        type_=col.type,
-                        primary_key=col.primary_key,
-                        default=col.default,
-                    )
-                )
-
-            # 1. Add the history mode columns to the table.
-            new_table.append_column(sa.Column(name=FIVETRAN_START, type_=sa.TIMESTAMP))
-            new_table.append_column(sa.Column(name=FIVETRAN_END, type_=sa.TIMESTAMP))
-            new_table.append_column(sa.Column(name=FIVETRAN_ACTIVE, type_=sa.BOOLEAN, default=True))
-
-            for col in new_table.columns:
-                if col.primary_key:
-                    col.nullable = False
-
-            metadata.create_all(conn, [new_table])
-            conn.commit()
-
-            column_names = [f'"{col.name}"' for col in found_table.columns]
-            conn.execute(
-                sa.text(
-                    f"""
-            INSERT INTO "{schema}"."{temptable_name}" ({", ".join(column_names)})
-            (
-              SELECT
-                {", ".join(column_names)}
-              FROM "{schema}"."{table}"
-            );
-            """
-                )
-            )
-
             # 2. Use soft_deleted_column to identify active records and set the values of
             #    _fivetran_start, _fivetran_end, and _fivetran_active columns appropriately.
             # TODO: Clarify if '<minTimestamp>' and '<maxTimestamp>' has been implemented correctly.
@@ -834,6 +814,46 @@ class SchemaMigrationHelper:
                 raise ValueError(
                     f"`operation_timestamp` {operation_timestamp} must be after `max(_fivetran_start)` {max_start}"
                 )
+
+    def _table_copy_schema(
+        self, schema: str, source_tablename: str, target_tablename: str, remove_pks: bool = False
+    ) -> sa.Table:
+        with self.engine.connect() as conn:
+            conn.execute(sa.text(f'DROP TABLE IF EXISTS "{schema}"."{target_tablename}"'))
+            metadata = sa.MetaData(schema=schema)
+            source_table = sa.Table(source_tablename, metadata, autoload_with=conn)
+            target_table = sa.Table(target_tablename, metadata)
+            for col in source_table.columns:
+                target_table.append_column(
+                    sa.Column(
+                        name=col.name,
+                        type_=col.type,
+                        primary_key=col.primary_key and not remove_pks,
+                        default=col.default,
+                    )
+                )
+            metadata.create_all(conn, [target_table])
+            conn.commit()
+            return target_table
+
+    def _table_copy_data(self, schema: str, source_tablename: str, target_tablename: str):
+        with self.engine.connect() as conn:
+            column_names = [
+                f'"{colname}"'
+                for colname in self.schema_helper.get_column_names(schema, source_tablename)
+            ]
+            conn.execute(
+                sa.text(
+                    f"""
+            INSERT INTO "{schema}"."{target_tablename}" ({", ".join(column_names)})
+            (
+              SELECT
+                {", ".join(column_names)}
+              FROM "{schema}"."{source_tablename}"
+            );
+            """
+                )
+            )
 
 
 class TableSchemaHelper:
