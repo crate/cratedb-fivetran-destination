@@ -16,6 +16,9 @@ FIVETRAN_ACTIVE = "__fivetran_active"
 FIVETRAN_DELETED = "__fivetran_deleted"
 FIVETRAN_SYNCED = "__fivetran_synced"
 
+MIN_TIMESTAMP = "0000-01-01 00:00:00"
+MAX_TIMESTAMP = "9999-12-31 23:59:59"
+
 
 class SchemaMigrationHelper:
     """Helper class for handling migration operations"""
@@ -762,12 +765,12 @@ class SchemaMigrationHelper:
                                     ELSE TRUE
                                     END,
                 {FIVETRAN_START}  = CASE
-                                    WHEN {soft_deleted_column} = TRUE THEN (SELECT MIN({FIVETRAN_START}) FROM "{schema}"."{temptable_name}")
+                                    WHEN {soft_deleted_column} = TRUE THEN '{MIN_TIMESTAMP}'::TIMESTAMP
                                     ELSE (SELECT MAX({FIVETRAN_SYNCED}) FROM "{schema}"."{temptable_name}")
                                     END,
                 {FIVETRAN_END}    = CASE
-                                    WHEN {soft_deleted_column} = TRUE THEN (SELECT MIN({FIVETRAN_END}) FROM "{schema}"."{temptable_name}")
-                                    ELSE (SELECT MAX({FIVETRAN_END}) FROM "{schema}"."{temptable_name}")
+                                    WHEN {soft_deleted_column} = TRUE THEN '{MIN_TIMESTAMP}'::TIMESTAMP
+                                    ELSE '{MAX_TIMESTAMP}'::TIMESTAMP
                                     END
             """)
             )
