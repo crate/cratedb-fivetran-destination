@@ -720,12 +720,6 @@ class SchemaMigrationHelper:
             new_table.append_column(sa.Column(name=FIVETRAN_END, type_=sa.TIMESTAMP))
             new_table.append_column(sa.Column(name=FIVETRAN_ACTIVE, type_=sa.BOOLEAN, default=True))
 
-            # TODO: Review: Why could this column be missing?
-            #       Column __fivetran_deleted unknown.
-            new_table.append_column(
-                sa.Column(name=soft_deleted_column, type_=sa.BOOLEAN), replace_existing=True
-            )
-
             for col in new_table.columns:
                 if col.primary_key:
                     col.nullable = False
