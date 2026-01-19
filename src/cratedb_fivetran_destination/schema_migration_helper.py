@@ -403,15 +403,10 @@ class SchemaMigrationHelper:
             default_value = add_col_default_with_value.default_value
             type_ = TypeMap.to_cratedb(new_col.type, new_col.params)
 
-            # Remark: `ALTER TABLE ... ADD COLUMN ... DEFAULT` is not possible with CrateDB.
+            # CrateDB does not implement `ALTER TABLE ... ADD COLUMN ... DEFAULT`,
+            # so let's run two separate commands.
             # - https://github.com/crate/crate/issues/18783
             # - https://github.com/crate/cratedb-fivetran-destination/issues/111
-            """
-            sql = (f'ALTER TABLE "{schema}"."{table}" '
-                   f'ADD COLUMN "{new_col.name}" {type_} '
-                   f'DEFAULT \'{default_value}\';')  # noqa: ERA001
-            """
-
             with self.engine.connect() as conn:
                 # 1. Add the column without a default value.
                 conn.execute(
