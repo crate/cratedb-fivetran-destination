@@ -223,9 +223,6 @@ class SchemaMigrationHelper:
                 # 3. Follow steps in the sync mode migration.
                 # - SOFT_DELETE_TO_HISTORY if soft_deleted_column is not null, or
                 # - LIVE_TO_HISTORY in order to migrate it to history mode.
-                self.schema_helper.remove_soft_delete_column(
-                    schema, copy_table.to_table, soft_deleted_column
-                )
                 if copy_table.soft_deleted_column:
                     self._table_soft_delete_to_history(
                         schema, copy_table.to_table, soft_deleted_column
@@ -525,11 +522,11 @@ class SchemaMigrationHelper:
 
             with self.engine.connect() as conn:
                 # 2. If _fivetran_deleted doesn't exist, then add it.
-                if FIVETRAN_DELETED not in column_names:
+                if soft_deleted_column not in column_names:
                     conn.execute(
                         sa.text(f"""
                     ALTER TABLE "{schema}"."{table}"
-                    ADD COLUMN "{FIVETRAN_DELETED}" BOOLEAN DEFAULT FALSE
+                    ADD COLUMN "{soft_deleted_column}" BOOLEAN DEFAULT FALSE
                     """)
                     )
 
@@ -595,8 +592,6 @@ class SchemaMigrationHelper:
             https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#history_to_live
             """
 
-            sql_bag = SqlBag()
-
             # 1. Drop the primary key constraint if it exists.
             #    Remark: Not possible with CrateDB.
             """
@@ -605,10 +600,13 @@ class SchemaMigrationHelper:
 
             # 2. If keep_deleted_rows is FALSE, then drop rows which are not active (skip if keep_deleted_rows is TRUE).
             if not op.keep_deleted_rows:
-                sql_bag.add(f"""
+                with self.engine.connect() as conn:
+                    conn.execute(
+                        sa.text(f"""
                 DELETE FROM "{schema}"."{table}"
                 WHERE "{FIVETRAN_ACTIVE}" = FALSE;
                 """)
+                    )
 
             # 3. Drop the history mode columns.
             self.schema_helper.remove_history_mode_columns(schema, table)
@@ -616,14 +614,10 @@ class SchemaMigrationHelper:
             # 4. Recreate the primary key constraint if it was dropped in step 1.
             #    Remark: Not possible with CrateDB, because primary key
             #            constraints can only be created on empty tables.
-            '''
-            sql_bag.add(f"""
+            """
             ALTER TABLE "{schema}"."{table}" ADD CONSTRAINT pk PRIMARY KEY ("{FIVETRAN_START}");
-            """)
-            '''
+            """
 
-            with self.engine.connect() as conn:
-                sql_bag.execute(conn)
             log_message(
                 LOG_INFO,
                 f"[Migrate:TableSyncModeMigration] Migrating table={schema}.{table} from HISTORY to LIVE",
@@ -691,7 +685,7 @@ class SchemaMigrationHelper:
                 UPDATE
                     "{schema}"."{table}"
                 SET
-                    "{FIVETRAN_END}" = '9999-12-31 23:59:59',
+                    "{FIVETRAN_END}" = '{MAX_TIMESTAMP}'::TIMESTAMP,
                     "{FIVETRAN_ACTIVE}" = TRUE;
                 ''')
             )

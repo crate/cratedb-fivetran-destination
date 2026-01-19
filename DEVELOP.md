@@ -88,9 +88,9 @@ SDK tester.
   Examples: 46f52c114d, 318147314
 
 - Title:    Testing: Update SDK tester input files.
-  Examples:
+  Examples: 973ee20d72
   Sources:  [input.json], [schema_migrations_input_ddl.json],
-            [schema_migrations_input_ddl.json],
+            [schema_migrations_input_dml.json],
             [schema_migrations_input_sync_modes.json]
 
 ## Building
