@@ -32,7 +32,7 @@ def test_schema_migration_helper_validate_history_table(engine):
     assert excinfo.match("table is empty")
 
 
-def test_alter_table_recreate_statements_column_count_mismatch(engine):
+def test_alter_table_recreate_statements_column_count_mismatch():
     """
     Validate exception is raised when column counts do not match.
     """

@@ -357,7 +357,7 @@ def migration_request(**migration_kwargs):
     )
 
 
-def test_api_migrate_missing_operation(engine, capsys):
+def test_api_migrate_missing_operation(capsys):
     """
     Invoke gRPC `Migrate` without operation.
     """
@@ -374,7 +374,7 @@ def test_api_migrate_missing_operation(engine, capsys):
     assert "[Migrate] Unsupported or missing operation" in out
 
 
-def test_api_migrate_add_without_entity(engine, capsys):
+def test_api_migrate_add_without_entity(capsys):
     """
     Invoke `SchemaMigrationHelper::handle_add` without entity.
     """
@@ -391,7 +391,7 @@ def test_api_migrate_add_without_entity(engine, capsys):
     assert "[Migrate:Add] No add entity specified" in out
 
 
-def test_api_migrate_copy_without_entity(engine, capsys):
+def test_api_migrate_copy_without_entity(capsys):
     """
     Invoke `SchemaMigrationHelper::handle_copy` without entity.
     """
@@ -408,7 +408,7 @@ def test_api_migrate_copy_without_entity(engine, capsys):
     assert "[Migrate:Copy] No copy entity specified" in out
 
 
-def test_api_migrate_drop_without_entity(engine, capsys):
+def test_api_migrate_drop_without_entity(capsys):
     """
     Invoke `SchemaMigrationHelper::handle_drop` without entity.
     """
@@ -425,7 +425,7 @@ def test_api_migrate_drop_without_entity(engine, capsys):
     assert "[Migrate:Drop] No drop entity specified" in out
 
 
-def test_api_migrate_rename_without_entity(engine, capsys):
+def test_api_migrate_rename_without_entity(capsys):
     """
     Invoke `SchemaMigrationHelper::handle_rename` without entity.
     """
