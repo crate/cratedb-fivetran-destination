@@ -730,9 +730,10 @@ class SchemaMigrationHelper:
                     "{schema}"."{temptable_name}"
                 SET
                     "{FIVETRAN_START}" = NOW(),
-                    "{FIVETRAN_END}" = '{MAX_TIMESTAMP}'::TIMESTAMP,
+                    "{FIVETRAN_END}" = CAST(:max_timestamp AS TIMESTAMP),
                     "{FIVETRAN_ACTIVE}" = TRUE;
-                ''')
+                '''),
+                {"max_timestamp": MAX_TIMESTAMP},
             )
 
             # Epilogue: Activate temporary table.
@@ -760,7 +761,6 @@ class SchemaMigrationHelper:
         with self.engine.connect() as conn:
             # 2. Use soft_deleted_column to identify active records and set the values of
             #    _fivetran_start, _fivetran_end, and _fivetran_active columns appropriately.
-            # TODO: Clarify if '<minTimestamp>' and '<maxTimestamp>' has been implemented correctly.
             conn.execute(
                 sa.text(f"""
             UPDATE "{schema}"."{temptable_name}"
@@ -770,14 +770,15 @@ class SchemaMigrationHelper:
                                     ELSE TRUE
                                     END,
                 {FIVETRAN_START}  = CASE
-                                    WHEN {soft_deleted_column} = TRUE THEN '{MIN_TIMESTAMP}'::TIMESTAMP
+                                    WHEN {soft_deleted_column} = TRUE THEN CAST(:min_timestamp AS TIMESTAMP)
                                     ELSE (SELECT MAX({FIVETRAN_SYNCED}) FROM "{schema}"."{temptable_name}")
                                     END,
                 {FIVETRAN_END}    = CASE
-                                    WHEN {soft_deleted_column} = TRUE THEN '{MIN_TIMESTAMP}'::TIMESTAMP
-                                    ELSE '{MAX_TIMESTAMP}'::TIMESTAMP
+                                    WHEN {soft_deleted_column} = TRUE THEN CAST(:min_timestamp AS TIMESTAMP)
+                                    ELSE CAST(:max_timestamp AS TIMESTAMP)
                                     END
-            """)
+            """),
+                {"min_timestamp": MIN_TIMESTAMP, "max_timestamp": MAX_TIMESTAMP},
             )
 
             # 3. If soft_deleted_column = _fivetran_deleted, then drop it.
