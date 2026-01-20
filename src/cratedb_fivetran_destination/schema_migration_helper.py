@@ -507,6 +507,9 @@ class SchemaMigrationHelper:
             https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#history_to_soft_delete
             """
 
+            # Prologue: Set table read-only.
+            self._table_read_only(schema, table)
+
             # 1. Drop the primary key constraint if it exists.
             #    CrateDB can't drop PK constraints,
             #    so it needs to copy the table to a temporary table.
@@ -601,6 +604,7 @@ class SchemaMigrationHelper:
                 """
 
                 # Epilogue: Activate temporary table.
+                self._table_read_write(schema, table)
                 conn.execute(
                     sa.text(f"""
                 ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
@@ -618,6 +622,9 @@ class SchemaMigrationHelper:
             This migration converts a table from HISTORY to LIVE mode.
             https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#history_to_live
             """
+
+            # Prologue: Set table read-only.
+            self._table_read_only(schema, table)
 
             # 1. Drop the primary key constraint if it exists.
             #    CrateDB can't drop PK constraints,
@@ -649,6 +656,7 @@ class SchemaMigrationHelper:
                 """
 
                 # Epilogue: Activate temporary table.
+                self._table_read_write(schema, table)
                 conn.execute(
                     sa.text(f"""
                 ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
@@ -713,8 +721,11 @@ class SchemaMigrationHelper:
         table.
         """
 
+        # Prologue: Set table read-only.
+        self._table_read_only(schema, table)
+
         with self.engine.connect() as conn:
-            # Prologue: Copy table to temporary table.
+            # Copy table to temporary table.
             temptable_name = table + "_live_to_history_tmp"
             self._table_copy_schema(schema, table, temptable_name, drop_pk_constraints=True)
             self._table_copy_data(schema, table, temptable_name)
@@ -737,6 +748,7 @@ class SchemaMigrationHelper:
             )
 
             # Epilogue: Activate temporary table.
+            self._table_read_write(schema, table)
             conn.execute(
                 sa.text(f"""
             ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
@@ -749,9 +761,11 @@ class SchemaMigrationHelper:
         https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#soft_delete_to_history
         """
 
-        temptable_name = table + "_soft_delete_to_history_tmp"
+        # Prologue: Set table read-only.
+        self._table_read_only(schema, table)
 
         # Prologue: Copy table to temporary table.
+        temptable_name = table + "_soft_delete_to_history_tmp"
         self._table_copy_schema(schema, table, temptable_name)
         self._table_copy_data(schema, table, temptable_name)
 
@@ -788,6 +802,7 @@ class SchemaMigrationHelper:
                 )
 
             # Epilogue: Activate temporary table.
+            self._table_read_write(schema, table)
             conn.execute(
                 sa.text(f"""
             ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
@@ -864,6 +879,16 @@ class SchemaMigrationHelper:
             """
                 )
             )
+
+    def _table_read_only(self, schema: str, table: str):
+        with self.engine.connect() as conn:
+            conn.execute(
+                sa.text(f"""ALTER TABLE "{schema}"."{table}" SET ("blocks.write"=true);""")
+            )
+
+    def _table_read_write(self, schema: str, table: str):
+        with self.engine.connect() as conn:
+            conn.execute(sa.text(f"""ALTER TABLE "{schema}"."{table}" RESET ("blocks.write");"""))
 
 
 class TableSchemaHelper:
