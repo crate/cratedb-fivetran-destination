@@ -576,22 +576,23 @@ class SchemaMigrationHelper:
                     DELETE FROM "{schema}"."{temptable_name}"
                     WHERE ({tuple_columns}) NOT IN (
                         SELECT {group_by_columns}, MAX("{FIVETRAN_START}")
-                        FROM "{schema}"."{table}"
+                        FROM "{schema}"."{temptable_name}"
                         GROUP BY {group_by_columns}
                     )
                     """)
                     )
 
                 # 4. Update the soft_deleted_column column based on _fivetran_active.
-                conn.execute(
-                    sa.text(f"""
-                UPDATE "{schema}"."{temptable_name}"
-                SET "{soft_deleted_column}" = CASE
-                                              WHEN {FIVETRAN_ACTIVE} = TRUE THEN FALSE
-                                              ELSE TRUE
-                                              END;
-                """)
-                )
+                if soft_deleted_column:
+                    conn.execute(
+                        sa.text(f"""
+                    UPDATE "{schema}"."{temptable_name}"
+                    SET "{soft_deleted_column}" = CASE
+                                                  WHEN {FIVETRAN_ACTIVE} = TRUE THEN FALSE
+                                                  ELSE TRUE
+                                                  END;
+                    """)
+                    )
 
                 # 5. Drop the history mode columns.
                 self.schema_helper.remove_history_mode_columns(schema, temptable_name)
@@ -674,6 +675,11 @@ class SchemaMigrationHelper:
             This migration converts a table from live mode to soft-delete mode.
             https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#live_to_soft_delete
             """
+            if not soft_deleted_column:
+                return destination_sdk_pb2.MigrateResponse(
+                    unsupported=True,
+                    warning=common_pb2.Warning("`soft_deleted_column` must be set"),
+                )
             with self.engine.connect() as conn:
                 # 1. Add the `soft_deleted_column` column if it does not exist.
                 self.schema_helper.add_soft_delete_column(schema, table, soft_deleted_column)
@@ -681,7 +687,11 @@ class SchemaMigrationHelper:
                 # 2. Update `soft_deleted_column`.
                 conn.execute(
                     sa.text(
-                        f'UPDATE "{schema}"."{table}" SET "{soft_deleted_column}" = FALSE WHERE "{soft_deleted_column}" IS NULL'
+                        f'''
+                        UPDATE "{schema}"."{table}"
+                        SET "{soft_deleted_column}" = FALSE
+                        WHERE "{soft_deleted_column}" IS NULL
+                        '''
                     )
                 )
 
@@ -918,7 +928,7 @@ class TableSchemaHelper:
             sql = """
             select table_schema, table_name, constraint_name, constraint_type as type
             from information_schema.table_constraints
-            where table_schema = :schema: and table_name = :table and constraint_type = :constraint
+            where table_schema = :schema and table_name = :table and constraint_type = :constraint
             """
             result = (
                 conn.execute(
