@@ -91,12 +91,18 @@ class SchemaMigrationHelper:
             if sql_bag:
                 with self.engine.connect() as conn:
                     sql_bag.execute(conn)
-
+                log_message(
+                    LOG_INFO,
+                    f"[Migrate:CopyColumn] table={schema}.{table} from_col={copy_column.from_column} to_col={copy_column.to_column}",
+                )
+                return destination_sdk_pb2.MigrateResponse(success=True)
             log_message(
-                LOG_INFO,
-                f"[Migrate:CopyColumn] table={schema}.{table} from_col={copy_column.from_column} to_col={copy_column.to_column}",
+                LOG_WARNING,
+                f"[Migrate:CopyColumn] table={schema}.{table} from_col={copy_column.from_column} to_col={copy_column.to_column} Source column not found",
             )
-            return destination_sdk_pb2.MigrateResponse(success=True)
+            return destination_sdk_pb2.MigrateResponse(
+                success=False, warning=common_pb2.Warning("Source column not found")
+            )
 
         if entity_case == "copy_table_to_history_mode":
             # table-map manipulation to simulate copy table to history mode, replace with actual logic.
