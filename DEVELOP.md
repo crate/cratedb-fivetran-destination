@@ -80,9 +80,11 @@ Please regularly check for updates to the Fivetran SDK and
 SDK tester.
 
 - Title:    Runtime: Update Fivetran SDK to commit `18e037c`
+  Source:   https://github.com/fivetran/fivetran_partner_sdk
   Examples: c2cf7a7502, 14fd432f4
 
 - Title:    Testing: Update to `sdk-tester:2.25.1105.001`
+  Source:   https://console.cloud.google.com/artifacts/docker/build-286712/us/public-docker-us/sdktesters-v2%2Fsdk-tester?pli=1
   Examples: 46f52c114d, 318147314
 
 ## Building
