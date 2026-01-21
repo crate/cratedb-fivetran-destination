@@ -57,7 +57,7 @@ def services(request):
 
     cmd = get_sdk_tester_command(directory=data_folder)
     processes.append(run(cmd, background=True))
-    sleep(6)
+    sleep(8)
 
     yield
 
