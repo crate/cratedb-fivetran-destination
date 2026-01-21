@@ -101,7 +101,7 @@ def test_integration_fivetran(capfd, services):
     """
 
     # Read out stdout and stderr.
-    out, err = capfd.readouterr()
+    _, err = capfd.readouterr()
 
     # "Truncate" is the last software test invoked by the Fivetran destination tester.
     # If the test case receives the corresponding log output, it is considered to be complete.
@@ -134,7 +134,7 @@ def test_integration_fivetran_migrations_ddl(capfd, services):
     """
 
     # Read out stdout and stderr.
-    out, err = capfd.readouterr()
+    _, err = capfd.readouterr()
 
     assert "Describe Table: transaction" in err
 
@@ -146,7 +146,7 @@ def test_integration_fivetran_migrations_dml(capfd, services):
     """
 
     # Read out stdout and stderr.
-    out, err = capfd.readouterr()
+    _, err = capfd.readouterr()
 
     assert "Describe Table: transaction" in err
     assert "Describe Table: transaction_renamed" in err
@@ -206,7 +206,7 @@ def test_integration_cratedb(capfd, services, engine):
         assert records == RECORD_REFERENCE
 
     # Read out stdout and stderr.
-    out, err = capfd.readouterr()
+    _, err = capfd.readouterr()
 
     # If the test case receives the corresponding log output, it is considered to be complete.
     assert "Create Table succeeded: all_types" in err
