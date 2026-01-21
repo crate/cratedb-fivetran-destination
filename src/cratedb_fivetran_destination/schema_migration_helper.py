@@ -219,7 +219,7 @@ class SchemaMigrationHelper:
 
         log_message(
             LOG_INFO,
-            f"[Migrate:UpdateColumnValue] table={schema}.{table} column={upd.column} value={upd.value}",
+            f"[Migrate:UpdateColumnValue] table={schema}.{table} column={upd.column}",
         )
         return destination_sdk_pb2.MigrateResponse(success=True)
 
