@@ -1,5 +1,6 @@
 # ruff: noqa: E501,S608
 # https://github.com/fivetran/fivetran_partner_sdk/blob/main/examples/destination_connector/python/schema_migration_helper.py
+import contextlib
 import typing as t
 from copy import deepcopy
 
@@ -508,113 +509,104 @@ class SchemaMigrationHelper:
             """
 
             # Prologue: Set table read-only.
-            self._table_read_only(schema, table)
-
-            # Retrieve primary key constraints from original table.
-            primary_keys = self.schema_helper.get_primary_key_names(schema, table)
-
-            # 1. Drop the primary key constraint if it exists.
-            #    CrateDB can't drop PK constraints,
-            #    so it needs to copy the table to a temporary table.
             temptable_name = table + "_history_to_soft_delete_tmp"
-            self._table_copy_schema(schema, table, temptable_name, drop_pk_constraints=True)
-            self._table_copy_data(schema, table, temptable_name)
+            with self._table_read_only(schema, table, temptable_name):
+                # Retrieve primary key constraints from original table.
+                primary_keys = self.schema_helper.get_primary_key_names(schema, table)
 
-            # 2. If _fivetran_deleted doesn't exist, then add it.
-            if soft_deleted_column:
-                self.schema_helper.add_soft_delete_column(
-                    schema, temptable_name, soft_deleted_column
-                )
+                # 1. Drop the primary key constraint if it exists.
+                #    CrateDB can't drop PK constraints,
+                #    so it needs to copy the table to a temporary table.
+                self._table_copy_schema(schema, table, temptable_name, drop_pk_constraints=True)
+                self._table_copy_data(schema, table, temptable_name)
 
-            with self.engine.connect() as conn:
-                # 3. Delete history for all records (delete all versions of each
-                #    unique PK except the latest version).
-                # FIXME: How to implement this with CrateDB?
-                #        SQLParseException[line 3:17: mismatched input 'USING' expecting {<EOF>, ';'}]
-                '''
-                pk_names = [f'"{name}"' for name in primary_keys]
-                where_constraints = []
-                for pk_name in pk_names:
-                    where_constraints.append(f"main_table.{pk_name} = temp_alias.{pk_name}")
-                conn.execute(
-                    sa.text(f"""
-                DELETE FROM "{schema}"."{temptable_name}" AS main_table
-                USING (
-                    SELECT {", ".join(pk_names)}
-                            MAX("{FIVETRAN_START}") AS "MAX_FIVETRAN_START"
-                    FROM "{schema}"."{table}"
-                    GROUP BY {", ".join(pk_names)}
-                    ) as temp_alias
-                WHERE
-                    ({" AND ".join(where_constraints)})
-                AND (
-                    main_table."{FIVETRAN_START}" <> temp_alias."MAX_FIVETRAN_START"
-                    OR main_table."{FIVETRAN_START}" IS NULL
-                );
-                """)
-                )
-                '''
-                # Implementation suggested by CodeRabbit.
-                #
-                # This approach avoids the `USING` clause entirely and should
-                # work well with CrateDB's SQL dialect.
-                #
-                # How it works:
-                # - The subquery groups by primary key columns and selects the
-                #   `MAX(__fivetran_start)` for each group (the latest version).
-                # - The outer `DELETE` removes all rows where the tuple
-                #   `(PK columns, __fivetran_start)` is **not** in that set of
-                #   latest versions.
-                # - This effectively keeps only the most recent row for each
-                #   unique PK combination.
-                #
-                pk_names = [f'"{name}"' for name in primary_keys]
-
-                if pk_names:
-                    # Build the column list for the tuple comparison.
-                    tuple_columns = ", ".join(pk_names) + f', "{FIVETRAN_START}"'
-                    group_by_columns = ", ".join(pk_names)
-
-                    conn.execute(
-                        sa.text(f"""
-                    DELETE FROM "{schema}"."{temptable_name}"
-                    WHERE ({tuple_columns}) NOT IN (
-                        SELECT {group_by_columns}, MAX("{FIVETRAN_START}")
-                        FROM "{schema}"."{temptable_name}"
-                        GROUP BY {group_by_columns}
-                    )
-                    """)
-                    )
-
-                # 4. Update the soft_deleted_column column based on _fivetran_active.
+                # 2. If _fivetran_deleted doesn't exist, then add it.
                 if soft_deleted_column:
-                    conn.execute(
-                        sa.text(f"""
-                    UPDATE "{schema}"."{temptable_name}"
-                    SET "{soft_deleted_column}" = CASE
-                                                  WHEN {FIVETRAN_ACTIVE} = TRUE THEN FALSE
-                                                  ELSE TRUE
-                                                  END;
-                    """)
+                    self.schema_helper.add_soft_delete_column(
+                        schema, temptable_name, soft_deleted_column
                     )
 
-                # 5. Drop the history mode columns.
-                self.schema_helper.remove_history_mode_columns(schema, temptable_name)
+                with self.engine.connect() as conn:
+                    # 3. Delete history for all records (delete all versions of each
+                    #    unique PK except the latest version).
+                    # FIXME: How to implement this with CrateDB?
+                    #        SQLParseException[line 3:17: mismatched input 'USING' expecting {<EOF>, ';'}]
+                    '''
+                    pk_names = [f'"{name}"' for name in primary_keys]
+                    where_constraints = []
+                    for pk_name in pk_names:
+                        where_constraints.append(f"main_table.{pk_name} = temp_alias.{pk_name}")
+                    conn.execute(
+                        sa.text(f"""
+                    DELETE FROM "{schema}"."{temptable_name}" AS main_table
+                    USING (
+                        SELECT {", ".join(pk_names)}
+                                MAX("{FIVETRAN_START}") AS "MAX_FIVETRAN_START"
+                        FROM "{schema}"."{table}"
+                        GROUP BY {", ".join(pk_names)}
+                        ) as temp_alias
+                    WHERE
+                        ({" AND ".join(where_constraints)})
+                    AND (
+                        main_table."{FIVETRAN_START}" <> temp_alias."MAX_FIVETRAN_START"
+                        OR main_table."{FIVETRAN_START}" IS NULL
+                    );
+                    """)
+                    )
+                    '''
+                    # Implementation suggested by CodeRabbit.
+                    #
+                    # This approach avoids the `USING` clause entirely and should
+                    # work well with CrateDB's SQL dialect.
+                    #
+                    # How it works:
+                    # - The subquery groups by primary key columns and selects the
+                    #   `MAX(__fivetran_start)` for each group (the latest version).
+                    # - The outer `DELETE` removes all rows where the tuple
+                    #   `(PK columns, __fivetran_start)` is **not** in that set of
+                    #   latest versions.
+                    # - This effectively keeps only the most recent row for each
+                    #   unique PK combination.
+                    #
+                    pk_names = [f'"{name}"' for name in primary_keys]
 
-                # 6. Recreate the primary key constraint if it was dropped in step 1.
-                #    Remark: Not possible with CrateDB, because primary key
-                #            constraints can only be created on empty tables.
-                """
-                ALTER TABLE <schema.table> ADD CONSTRAINT <primary_key_constraint> PRIMARY KEY (<columns>);
-                """
+                    if pk_names:
+                        # Build the column list for the tuple comparison.
+                        tuple_columns = ", ".join(pk_names) + f', "{FIVETRAN_START}"'
+                        group_by_columns = ", ".join(pk_names)
 
-                # Epilogue: Activate temporary table.
-                self._table_read_write(schema, table)
-                conn.execute(
-                    sa.text(f"""
-                ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
-                """)
-                )
+                        conn.execute(
+                            sa.text(f"""
+                        DELETE FROM "{schema}"."{temptable_name}"
+                        WHERE ({tuple_columns}) NOT IN (
+                            SELECT {group_by_columns}, MAX("{FIVETRAN_START}")
+                            FROM "{schema}"."{temptable_name}"
+                            GROUP BY {group_by_columns}
+                        )
+                        """)
+                        )
+
+                    # 4. Update the soft_deleted_column column based on _fivetran_active.
+                    if soft_deleted_column:
+                        conn.execute(
+                            sa.text(f"""
+                        UPDATE "{schema}"."{temptable_name}"
+                        SET "{soft_deleted_column}" = CASE
+                                                      WHEN {FIVETRAN_ACTIVE} = TRUE THEN FALSE
+                                                      ELSE TRUE
+                                                      END;
+                        """)
+                        )
+
+                    # 5. Drop the history mode columns.
+                    self.schema_helper.remove_history_mode_columns(schema, temptable_name)
+
+                    # 6. Recreate the primary key constraint if it was dropped in step 1.
+                    #    Remark: Not possible with CrateDB, because primary key
+                    #            constraints can only be created on empty tables.
+                    """
+                    ALTER TABLE <schema.table> ADD CONSTRAINT <primary_key_constraint> PRIMARY KEY (<columns>);
+                    """
 
             log_message(
                 LOG_INFO,
@@ -629,44 +621,35 @@ class SchemaMigrationHelper:
             """
 
             # Prologue: Set table read-only.
-            self._table_read_only(schema, table)
-
-            # 1. Drop the primary key constraint if it exists.
-            #    CrateDB can't drop PK constraints,
-            #    so it needs to copy the table to a temporary table.
             temptable_name = table + "_history_to_live_tmp"
+            with self._table_read_only(schema, table, temptable_name):
+                # 1. Drop the primary key constraint if it exists.
+                #    CrateDB can't drop PK constraints,
+                #    so it needs to copy the table to a temporary table.
 
-            with self.engine.connect() as conn:
-                # Prologue: Copy table to temporary table.
-                self._table_copy_schema(schema, table, temptable_name, drop_pk_constraints=True)
-                self._table_copy_data(schema, table, temptable_name)
+                with self.engine.connect() as conn:
+                    # Prologue: Copy table to temporary table.
+                    self._table_copy_schema(schema, table, temptable_name, drop_pk_constraints=True)
+                    self._table_copy_data(schema, table, temptable_name)
 
-                # 2. If keep_deleted_rows is FALSE, then drop rows which are not active (skip if keep_deleted_rows is TRUE).
-                if not op.keep_deleted_rows:
-                    conn.execute(
-                        sa.text(f"""
-                    DELETE FROM "{schema}"."{temptable_name}"
-                    WHERE "{FIVETRAN_ACTIVE}" = FALSE;
-                    """)
-                    )
+                    # 2. If keep_deleted_rows is FALSE, then drop rows which are not active (skip if keep_deleted_rows is TRUE).
+                    if not op.keep_deleted_rows:
+                        conn.execute(
+                            sa.text(f"""
+                        DELETE FROM "{schema}"."{temptable_name}"
+                        WHERE "{FIVETRAN_ACTIVE}" = FALSE;
+                        """)
+                        )
 
-                # 3. Drop the history mode columns.
-                self.schema_helper.remove_history_mode_columns(schema, temptable_name)
+                    # 3. Drop the history mode columns.
+                    self.schema_helper.remove_history_mode_columns(schema, temptable_name)
 
-                # 4. Recreate the primary key constraint if it was dropped in step 1.
-                #    Remark: Not possible with CrateDB, because primary key
-                #            constraints can only be created on empty tables.
-                """
-                ALTER TABLE "{schema}"."{table}" ADD CONSTRAINT pk PRIMARY KEY ("{FIVETRAN_START}");
-                """
-
-                # Epilogue: Activate temporary table.
-                self._table_read_write(schema, table)
-                conn.execute(
-                    sa.text(f"""
-                ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
-                """)
-                )
+                    # 4. Recreate the primary key constraint if it was dropped in step 1.
+                    #    Remark: Not possible with CrateDB, because primary key
+                    #            constraints can only be created on empty tables.
+                    """
+                    ALTER TABLE "{schema}"."{table}" ADD CONSTRAINT pk PRIMARY KEY ("{FIVETRAN_START}");
+                    """
 
             log_message(
                 LOG_INFO,
@@ -736,38 +719,29 @@ class SchemaMigrationHelper:
         """
 
         # Prologue: Set table read-only.
-        self._table_read_only(schema, table)
+        temptable_name = table + "_live_to_history_tmp"
+        with self._table_read_only(schema, table, temptable_name):
+            with self.engine.connect() as conn:
+                # Copy table to temporary table.
+                self._table_copy_schema(schema, table, temptable_name, drop_pk_constraints=True)
+                self._table_copy_data(schema, table, temptable_name)
 
-        with self.engine.connect() as conn:
-            # Copy table to temporary table.
-            temptable_name = table + "_live_to_history_tmp"
-            self._table_copy_schema(schema, table, temptable_name, drop_pk_constraints=True)
-            self._table_copy_data(schema, table, temptable_name)
+                # 1. Add the history mode columns to the table.
+                self.schema_helper.add_history_mode_columns(schema, temptable_name)
 
-            # 1. Add the history mode columns to the table.
-            self.schema_helper.add_history_mode_columns(schema, temptable_name)
-
-            # 2. Set all the records as active and set the _fivetran_start, _fivetran_end,
-            #    and _fivetran_active columns appropriately.
-            conn.execute(
-                sa.text(f'''
-                UPDATE
-                    "{schema}"."{temptable_name}"
-                SET
-                    "{FIVETRAN_START}" = NOW(),
-                    "{FIVETRAN_END}" = CAST(:max_timestamp AS TIMESTAMP),
-                    "{FIVETRAN_ACTIVE}" = TRUE;
-                '''),
-                {"max_timestamp": MAX_TIMESTAMP},
-            )
-
-            # Epilogue: Activate temporary table.
-            self._table_read_write(schema, table)
-            conn.execute(
-                sa.text(f"""
-            ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
-            """)
-            )
+                # 2. Set all the records as active and set the _fivetran_start, _fivetran_end,
+                #    and _fivetran_active columns appropriately.
+                conn.execute(
+                    sa.text(f'''
+                    UPDATE
+                        "{schema}"."{temptable_name}"
+                    SET
+                        "{FIVETRAN_START}" = NOW(),
+                        "{FIVETRAN_END}" = CAST(:max_timestamp AS TIMESTAMP),
+                        "{FIVETRAN_ACTIVE}" = TRUE;
+                    '''),
+                    {"max_timestamp": MAX_TIMESTAMP},
+                )
 
     def _table_soft_delete_to_history(self, schema: str, table: str, soft_deleted_column: str):
         """
@@ -776,52 +750,43 @@ class SchemaMigrationHelper:
         """
 
         # Prologue: Set table read-only.
-        self._table_read_only(schema, table)
-
-        # Prologue: Copy table to temporary table.
         temptable_name = table + "_soft_delete_to_history_tmp"
-        self._table_copy_schema(schema, table, temptable_name)
-        self._table_copy_data(schema, table, temptable_name)
+        with self._table_read_only(schema, table, temptable_name):
+            # Prologue: Copy table to temporary table.
+            self._table_copy_schema(schema, table, temptable_name)
+            self._table_copy_data(schema, table, temptable_name)
 
-        # 1. Add the history mode columns to the table.
-        self.schema_helper.add_history_mode_columns(schema, temptable_name)
+            # 1. Add the history mode columns to the table.
+            self.schema_helper.add_history_mode_columns(schema, temptable_name)
 
-        with self.engine.connect() as conn:
-            # 2. Use soft_deleted_column to identify active records and set the values of
-            #    _fivetran_start, _fivetran_end, and _fivetran_active columns appropriately.
-            conn.execute(
-                sa.text(f"""
-            UPDATE "{schema}"."{temptable_name}"
-            SET
-                {FIVETRAN_ACTIVE} = CASE
-                                    WHEN "{soft_deleted_column}" = TRUE THEN FALSE
-                                    ELSE TRUE
-                                    END,
-                {FIVETRAN_START}  = CASE
-                                    WHEN "{soft_deleted_column}" = TRUE THEN CAST(:min_timestamp AS TIMESTAMP)
-                                    ELSE (SELECT MAX({FIVETRAN_SYNCED}) FROM "{schema}"."{temptable_name}")
-                                    END,
-                {FIVETRAN_END}    = CASE
-                                    WHEN "{soft_deleted_column}" = TRUE THEN CAST(:min_timestamp AS TIMESTAMP)
-                                    ELSE CAST(:max_timestamp AS TIMESTAMP)
-                                    END
-            """),
-                {"min_timestamp": MIN_TIMESTAMP, "max_timestamp": MAX_TIMESTAMP},
-            )
-
-            # 3. If soft_deleted_column = _fivetran_deleted, then drop it.
-            if soft_deleted_column == FIVETRAN_DELETED:
-                self.schema_helper.remove_soft_delete_column(
-                    schema, temptable_name, FIVETRAN_DELETED
+            with self.engine.connect() as conn:
+                # 2. Use soft_deleted_column to identify active records and set the values of
+                #    _fivetran_start, _fivetran_end, and _fivetran_active columns appropriately.
+                conn.execute(
+                    sa.text(f"""
+                UPDATE "{schema}"."{temptable_name}"
+                SET
+                    {FIVETRAN_ACTIVE} = CASE
+                                        WHEN "{soft_deleted_column}" = TRUE THEN FALSE
+                                        ELSE TRUE
+                                        END,
+                    {FIVETRAN_START}  = CASE
+                                        WHEN "{soft_deleted_column}" = TRUE THEN CAST(:min_timestamp AS TIMESTAMP)
+                                        ELSE (SELECT MAX({FIVETRAN_SYNCED}) FROM "{schema}"."{temptable_name}")
+                                        END,
+                    {FIVETRAN_END}    = CASE
+                                        WHEN "{soft_deleted_column}" = TRUE THEN CAST(:min_timestamp AS TIMESTAMP)
+                                        ELSE CAST(:max_timestamp AS TIMESTAMP)
+                                        END
+                """),
+                    {"min_timestamp": MIN_TIMESTAMP, "max_timestamp": MAX_TIMESTAMP},
                 )
 
-            # Epilogue: Activate temporary table.
-            self._table_read_write(schema, table)
-            conn.execute(
-                sa.text(f"""
-            ALTER CLUSTER SWAP TABLE "{schema}"."{temptable_name}" TO "{schema}"."{table}" WITH (drop_source=true)
-            """)
-            )
+                # 3. If soft_deleted_column = _fivetran_deleted, then drop it.
+                if soft_deleted_column == FIVETRAN_DELETED:
+                    self.schema_helper.remove_soft_delete_column(
+                        schema, temptable_name, FIVETRAN_DELETED
+                    )
 
     def _validate_history_table(self, schema, table, operation_timestamp):
         """
@@ -896,11 +861,26 @@ class SchemaMigrationHelper:
                 )
             )
 
-    def _table_read_only(self, schema: str, table: str):
+    @contextlib.contextmanager
+    def _table_read_only(self, schema: str, table: str, temptable: str):
         with self.engine.connect() as conn:
             conn.execute(
                 sa.text(f"""ALTER TABLE "{schema}"."{table}" SET ("blocks.write"=true);""")
             )
+            try:
+                # Invoke wrapped workhorse code block.
+                yield
+
+                # Epilogue: Activate temporary table.
+                self._table_read_write(schema, table)
+                conn.execute(
+                    sa.text(f"""
+                ALTER CLUSTER SWAP TABLE "{schema}"."{temptable}" TO "{schema}"."{table}" WITH (drop_source=true)
+                """)
+                )
+            finally:
+                # Ensure writes are re-enabled even if migration fails mid-way.
+                self._table_read_write(schema, table)
 
     def _table_read_write(self, schema: str, table: str):
         with self.engine.connect() as conn:
