@@ -327,7 +327,7 @@ class SchemaMigrationHelper:
             unchanged_columns = [
                 f'"{FieldMap.to_cratedb(col.name)}"' for col in table_obj_tmp.columns
             ]
-            all_columns = unchanged_columns + [column_name, FIVETRAN_START]
+            all_columns = [*unchanged_columns, column_name, FIVETRAN_START]
 
             # 2. Insert new rows to record the history of the DDL operation.
             sql_bag.add(
@@ -439,7 +439,7 @@ class SchemaMigrationHelper:
         """
         with self.engine.connect() as conn:
             conn.execute(
-                sa.text(f'UPDATE "{schema}"."{table}" SET "{upd.column}"=:value;'),  # noqa: S608
+                sa.text(f'UPDATE "{schema}"."{table}" SET "{upd.column}"=:value;'),
                 parameters={"value": upd.value},
             )
             conn.execute(sa.text(f'REFRESH TABLE "{schema}"."{table}";'))
@@ -510,6 +510,9 @@ class SchemaMigrationHelper:
             # Prologue: Set table read-only.
             self._table_read_only(schema, table)
 
+            # Retrieve primary key constraints from original table.
+            primary_keys = self.schema_helper.get_primary_key_names(schema, table)
+
             # 1. Drop the primary key constraint if it exists.
             #    CrateDB can't drop PK constraints,
             #    so it needs to copy the table to a temporary table.
@@ -518,7 +521,10 @@ class SchemaMigrationHelper:
             self._table_copy_data(schema, table, temptable_name)
 
             # 2. If _fivetran_deleted doesn't exist, then add it.
-            self.schema_helper.add_soft_delete_column(schema, temptable_name, soft_deleted_column)
+            if soft_deleted_column:
+                self.schema_helper.add_soft_delete_column(
+                    schema, temptable_name, soft_deleted_column
+                )
 
             with self.engine.connect() as conn:
                 # 3. Delete history for all records (delete all versions of each
@@ -526,7 +532,6 @@ class SchemaMigrationHelper:
                 # FIXME: How to implement this with CrateDB?
                 #        SQLParseException[line 3:17: mismatched input 'USING' expecting {<EOF>, ';'}]
                 '''
-                primary_keys = self.schema_helper.get_primary_key_names(schema, temptable_name)
                 pk_names = [f'"{name}"' for name in primary_keys]
                 where_constraints = []
                 for pk_name in pk_names:
@@ -563,7 +568,6 @@ class SchemaMigrationHelper:
                 # - This effectively keeps only the most recent row for each
                 #   unique PK combination.
                 #
-                primary_keys = self.schema_helper.get_primary_key_names(schema, temptable_name)
                 pk_names = [f'"{name}"' for name in primary_keys]
 
                 if pk_names:
@@ -790,15 +794,15 @@ class SchemaMigrationHelper:
             UPDATE "{schema}"."{temptable_name}"
             SET
                 {FIVETRAN_ACTIVE} = CASE
-                                    WHEN {soft_deleted_column} = TRUE THEN FALSE
+                                    WHEN "{soft_deleted_column}" = TRUE THEN FALSE
                                     ELSE TRUE
                                     END,
                 {FIVETRAN_START}  = CASE
-                                    WHEN {soft_deleted_column} = TRUE THEN CAST(:min_timestamp AS TIMESTAMP)
+                                    WHEN "{soft_deleted_column}" = TRUE THEN CAST(:min_timestamp AS TIMESTAMP)
                                     ELSE (SELECT MAX({FIVETRAN_SYNCED}) FROM "{schema}"."{temptable_name}")
                                     END,
                 {FIVETRAN_END}    = CASE
-                                    WHEN {soft_deleted_column} = TRUE THEN CAST(:min_timestamp AS TIMESTAMP)
+                                    WHEN "{soft_deleted_column}" = TRUE THEN CAST(:min_timestamp AS TIMESTAMP)
                                     ELSE CAST(:max_timestamp AS TIMESTAMP)
                                     END
             """),
@@ -864,7 +868,9 @@ class SchemaMigrationHelper:
                         name=col.name,
                         type_=col.type,
                         primary_key=col.primary_key and not drop_pk_constraints,
+                        nullable=col.nullable and not col.primary_key,
                         default=col.default,
+                        server_default=col.server_default,
                     )
                 )
             metadata.create_all(conn, [target_table])
@@ -921,6 +927,8 @@ class TableSchemaHelper:
 
     def add_soft_delete_column(self, schema: str, table: str, column_name: str):
         """Adds a soft delete column to a table."""
+        if not column_name:
+            raise ValueError("`column_name` cannot be empty")
         column_names = self.get_column_names(schema, table)
         if column_name not in column_names:
             with self.engine.connect() as conn:
