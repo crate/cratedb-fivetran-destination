@@ -42,9 +42,7 @@ requirements.
 3. Enter a **Destination name** of your choice and then click **Add**.
 4. Select **CrateDB** as the destination type.
 5. In the destination setup form, enter the **URL** of your database cluster.
-6. Enumerate the steps from the destination setup form.
-7. List one action per step.
-8. Click **Save & Test**.
+6. Click **Save & Test**.
 
    Fivetran [tests and validates]
    the database connection. Upon successfully completing the setup tests, you can

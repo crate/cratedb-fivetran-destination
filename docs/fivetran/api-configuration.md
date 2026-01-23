@@ -9,7 +9,7 @@ hidden: false
 
 ## Request
 
-```
+```text
 POST https://api.fivetran.com/v1/destinations
 ```
 
