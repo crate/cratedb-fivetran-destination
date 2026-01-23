@@ -1,21 +1,23 @@
 # CrateDB Fivetran Destination Changelog
 
 ## Unreleased
-- Dependencies: Updated requirements across the board
-- Testing: Updated to `sdk-tester:2.25.1105.001`
-- Runtime: Updated Fivetran SDK to commit `18e037c`
+
+### Features
 - Implemented `AlterTableRecreateStatements` for recreating a table
-  with a new schema, used for processing primary key column changes.
-- Added support for `AlterTable::drop_columns` operation.
-- Build: Added `main.py` application entrypoint and `build.sh` files
-- Runtime: Updated Fivetran SDK to commit `76b1422`
+  with a new schema, used for processing primary key column changes
+- Added support for `AlterTable::drop_columns` operation
+- Compatibility: Field `_fivetran_deleted` became optional
+- Added support for schema migrations
+- Added support for history and live mode
+- Added support for Fivetran's `TIME_NAIVE` data type
+- Made temp table creation resilient to failed runs of `AlterTable`
+
+### Infrastructure
+- Dependencies: Updated requirements across the board
 - Testing: Updated to `sdk-tester:2.26.0113.001`
-- Compatibility: Field `_fivetran_deleted` became obligatory
+- Runtime: Updated Fivetran SDK to commit `76b1422`
 - Build: Trimmed `requirements.txt`, dependencies are defined in `pyproject.toml`
-- Added support for schema migrations.
-- Added support for history mode.
-- Added support for Fivetran's `TIME_NAIVE` data type.
-- AlterTable: Made temp table creation resilient to failed runs
+- Build: Added `main.py` application entrypoint and `build.sh` files
 
 ## v0.0.3 - 2025-05-23
 - Dependencies: Updated to `sqlalchemy-cratedb==0.42.0.dev2`
