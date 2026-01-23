@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added documentation from Fivetran blueprints
+
 ## v0.0.4 - 2026-01-23
 
 ### Features
