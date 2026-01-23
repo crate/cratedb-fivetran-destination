@@ -7,7 +7,7 @@ requires = [
 
 [project]
 name = "cratedb-fivetran-destination"
-version = "0.0.4.dev0"
+version = "0.0.4"
 
 description = "CrateDB Fivetran Destination"
 readme = "README.md"

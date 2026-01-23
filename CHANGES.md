@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.0.4 - 2026-01-23
+
 ### Features
 - Implemented `AlterTableRecreateStatements` for recreating a table
   with a new schema, used for processing primary key column changes
