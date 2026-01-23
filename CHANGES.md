@@ -11,6 +11,7 @@
 - Dependencies: Updated to grpcio==1.78.*
 - Model: Removed workaround for `_`-prefixed column names.
   The package now requires CrateDB 6.2 or higher.
+- Added documentation from Fivetran blueprints
 
 [live mode pause]: https://github.com/crate/cratedb-fivetran-destination/issues/148
 
