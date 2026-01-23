@@ -929,6 +929,8 @@ class TableSchemaHelper:
                         f'ALTER TABLE "{schema}"."{table}" ADD COLUMN "{column_name}" BOOLEAN DEFAULT FALSE'
                     )
                 )
+                # CrateDB backfill workaround.
+                conn.execute(sa.text(f'UPDATE "{schema}"."{table}" SET "{column_name}"=FALSE'))
 
     def remove_soft_delete_column(self, schema: str, table: str, column_name: str):
         """Remove a soft delete column from a table."""
@@ -955,6 +957,11 @@ class TableSchemaHelper:
             sql_bag.add(f'''
             ALTER TABLE "{schema}"."{table}"
             ADD COLUMN "{FIVETRAN_ACTIVE}" BOOLEAN DEFAULT TRUE''')
+            # CrateDB backfill workaround.
+            sql_bag.add(f'''
+            UPDATE "{schema}"."{table}"
+            SET "{FIVETRAN_ACTIVE}"=TRUE
+            ''')
 
         with self.engine.connect() as conn:
             sql_bag.execute(conn)
