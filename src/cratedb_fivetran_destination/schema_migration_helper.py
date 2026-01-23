@@ -919,35 +919,6 @@ class TableSchemaHelper:
             pk_columns = sa.Table(table, metadata, autoload_with=conn).primary_key.columns
             return [col.name for col in pk_columns]
 
-    def drop_primary_key_constraint(self, schema: str, table: str) -> bool:  # pragma: no cover
-        """
-        Does not work on CrateDB, which can only drop CHECK constraints.
-        SQLParseException[Cannot find a CHECK CONSTRAINT named [transaction_history_pkey], available constraints are: []]
-        """
-        with self.engine.connect() as conn:
-            sql = """
-            select table_schema, table_name, constraint_name, constraint_type as type
-            from information_schema.table_constraints
-            where table_schema = :schema and table_name = :table and constraint_type = :constraint
-            """
-            result = (
-                conn.execute(
-                    sa.text(sql), {"schema": schema, "table": table, "constraint": "PRIMARY KEY"}
-                )
-                .mappings()
-                .fetchone()
-            )
-            if result is not None:
-                pk_constraint_name = result["constraint_name"]
-                dropped = conn.execute(
-                    sa.text(f"""
-                ALTER TABLE "{schema}"."{table}"
-                DROP CONSTRAINT "{pk_constraint_name}"
-                """)
-                )
-                return dropped is not None
-        return False
-
     def add_soft_delete_column(self, schema: str, table: str, column_name: str):
         """Adds a soft delete column to a table."""
         column_names = self.get_column_names(schema, table)
