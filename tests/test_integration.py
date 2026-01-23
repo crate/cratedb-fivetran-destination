@@ -88,9 +88,9 @@ RECORD_REFERENCE = dict(  # noqa: C408
     json={"count": 42, "foo": "bar"},
     xml="XML",
     naive_time=45296000,
-    __fivetran_synced=mock.ANY,
-    __fivetran_id="zyx-987-abc",
-    __fivetran_deleted=False,
+    _fivetran_synced=mock.ANY,
+    _fivetran_id="zyx-987-abc",
+    _fivetran_deleted=False,
 )
 
 
@@ -201,9 +201,9 @@ def test_integration_cratedb(capfd, services, engine):
         sa.Column("json", ObjectType),
         sa.Column("xml", sa.String),
         sa.Column("naive_time", UserDefinedType),
-        sa.Column("__fivetran_synced", UserDefinedType),
-        sa.Column("__fivetran_id", sa.String),
-        sa.Column("__fivetran_deleted", sa.Boolean),
+        sa.Column("_fivetran_synced", UserDefinedType),
+        sa.Column("_fivetran_id", sa.String),
+        sa.Column("_fivetran_deleted", sa.Boolean),
         schema="tester_reference",
         quote_schema=True,
     )

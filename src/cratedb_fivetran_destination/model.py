@@ -8,52 +8,8 @@ from attrs import define
 from sqlalchemy_cratedb import ObjectType
 from sqlalchemy_cratedb.type.object import ObjectTypeImpl
 
-from cratedb_fivetran_destination.dictx import OrderedDictX
 from fivetran_sdk import common_pb2
 from fivetran_sdk.common_pb2 import DataType
-
-
-class FieldMap:
-    """
-    Manage special knowledge about CrateDB field names.
-    """
-
-    # Map special column names, because CrateDB does not allow `_` prefixes.
-    field_map = {
-        "_fivetran_id": "__fivetran_id",
-        "_fivetran_synced": "__fivetran_synced",
-        "_fivetran_start": "__fivetran_start",
-        "_fivetran_end": "__fivetran_end",
-        "_fivetran_active": "__fivetran_active",
-        "_fivetran_deleted": "__fivetran_deleted",
-    }
-
-    @classmethod
-    def rename_keys(cls, record):
-        """
-        Rename keys according to the field map.
-        """
-        record = OrderedDictX(record)
-        for key, value in cls.field_map.items():
-            if key in record:
-                record.rename_key(key, value)
-        return record
-
-    @classmethod
-    def to_cratedb(cls, fivetran_field):
-        """
-        Convert a Fivetran field name into a CrateDB field name.
-        """
-        return cls.field_map.get(fivetran_field, fivetran_field)
-
-    @classmethod
-    def to_fivetran(cls, cratedb_field):
-        """
-        Convert a CrateDB field name into a Fivetran field name.
-        """
-        # TODO: Compute reverse map only once.
-        reverse_map = dict(zip(cls.field_map.values(), cls.field_map.keys()))
-        return reverse_map.get(cratedb_field, cratedb_field)
 
 
 class TypeMap:
