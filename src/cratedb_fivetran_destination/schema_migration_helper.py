@@ -58,7 +58,7 @@ class SchemaMigrationHelper:
             column_name = drop_column.column
             operation_timestamp = drop_column.operation_timestamp
 
-            # 0. Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
+            # 0. Validate table is non-empty and `max(_fivetran_start) <= operation_timestamp`.
             try:
                 self._validate_history_table(schema, table, operation_timestamp)
             except ValueError as e:
@@ -300,7 +300,7 @@ class SchemaMigrationHelper:
 
             sql_bag = SqlBag()
 
-            # 0. Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
+            # 0. Validate table is non-empty and `max(_fivetran_start) <= operation_timestamp`.
             try:
                 self._validate_history_table(schema, table, operation_timestamp)
             except ValueError as e:
@@ -466,6 +466,11 @@ class SchemaMigrationHelper:
             This migration converts a table from soft-delete mode to live mode.
             https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#soft_delete_to_live
             """
+            if not soft_deleted_column:
+                return destination_sdk_pb2.MigrateResponse(
+                    unsupported=True,
+                    warning=common_pb2.Warning("`soft_deleted_column` must be set"),
+                )
             column_names = self.schema_helper.get_column_names(schema, table)
             with self.engine.connect() as conn:
                 if soft_deleted_column in column_names:
@@ -477,8 +482,8 @@ class SchemaMigrationHelper:
                     """)
                     )
 
-                    # 2. If soft_deleted_column = _fivetran_deleted column, then drop it.
-                    if soft_deleted_column == FIVETRAN_DELETED:
+                    # 2. If `_fivetran_deleted` is present, then drop it.
+                    if FIVETRAN_DELETED in column_names:
                         self.schema_helper.remove_soft_delete_column(
                             schema, table, FIVETRAN_DELETED
                         )
@@ -759,6 +764,9 @@ class SchemaMigrationHelper:
             # 1. Add the history mode columns to the table.
             self.schema_helper.add_history_mode_columns(schema, temptable_name)
 
+            # Retrieve all column names.
+            column_names = self.schema_helper.get_column_names(schema, temptable_name)
+
             with self.engine.connect() as conn:
                 # 2. Use soft_deleted_column to identify active records and set the values of
                 #    _fivetran_start, _fivetran_end, and _fivetran_active columns appropriately.
@@ -782,15 +790,15 @@ class SchemaMigrationHelper:
                     {"min_timestamp": MIN_TIMESTAMP, "max_timestamp": MAX_TIMESTAMP},
                 )
 
-                # 3. If soft_deleted_column = _fivetran_deleted, then drop it.
-                if soft_deleted_column == FIVETRAN_DELETED:
+                # 3. If `_fivetran_deleted` is present, then drop it.
+                if FIVETRAN_DELETED in column_names:
                     self.schema_helper.remove_soft_delete_column(
                         schema, temptable_name, FIVETRAN_DELETED
                     )
 
     def _validate_history_table(self, schema, table, operation_timestamp):
         """
-        Validate table is non-empty and `max(_fivetran_start) < operation_timestamp`.
+        Validate table is non-empty and `max(_fivetran_start) <= operation_timestamp`.
         """
         with self.engine.connect() as conn:
             # Synchronize previous writes.
@@ -810,9 +818,9 @@ class SchemaMigrationHelper:
             WHERE {FIVETRAN_ACTIVE} = TRUE
             """
             max_start = conn.execute(sa.text(sql)).scalar_one()
-            if max_start is not None and max_start >= operation_timestamp:
+            if max_start is not None and max_start > operation_timestamp:
                 raise ValueError(
-                    f"`operation_timestamp` {operation_timestamp} must be after `max(_fivetran_start)` {max_start}"
+                    f"`operation_timestamp` {operation_timestamp} must be on or after `max(_fivetran_start)` {max_start}"
                 )
 
     def _table_copy_schema(
