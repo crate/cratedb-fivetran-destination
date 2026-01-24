@@ -492,7 +492,7 @@ def test_api_migrate_add_column_in_history_mode_operation_timestamp_wrong(engine
 
     # Validate outcome.
     assert response.success is False
-    pattern = "`operation_timestamp` .+ must be after `max\\(_fivetran_start\\)` .+"
+    pattern = "`operation_timestamp` .+ must be on or after `max\\(_fivetran_start\\)` .+"
     assert re.match(pattern, response.warning.message), (
         f"{response.warning.message} did not match pattern"
     )
@@ -546,7 +546,7 @@ def test_api_migrate_drop_column_in_history_mode_operation_timestamp_wrong(engin
 
     # Validate outcome.
     assert response.success is False
-    pattern = "`operation_timestamp` .+ must be after `max\\(_fivetran_start\\)` .+"
+    pattern = "`operation_timestamp` .+ must be on or after `max\\(_fivetran_start\\)` .+"
     assert re.match(pattern, response.warning.message), (
         f"{response.warning.message} did not match pattern"
     )
