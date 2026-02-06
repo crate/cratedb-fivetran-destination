@@ -7,7 +7,6 @@ from attrs import define
 from toolz import dissoc
 
 from cratedb_fivetran_destination.model import (
-    FieldMap,
     SqlBag,
     SqlStatement,
     TableAddress,
@@ -124,7 +123,7 @@ class AlterTableInplaceStatements:
         # Translate "columns changed" instructions into migration operation
         # based on altering and copying using `UPDATE ... SET ...`.
         for column in self.columns_changed:
-            column_name = FieldMap.to_cratedb(column.name)
+            column_name = column.name
             column_name_temporary = column_name + "_alter_tmp"
             type_ = TypeMap.to_cratedb(column.type, column.params)
             sqlbag.add(
@@ -149,9 +148,9 @@ class AlterTableInplaceStatements:
 
     @staticmethod
     def column_definition(column):
-        field = FieldMap.to_cratedb(column.name)
+        field = column.name
         type_ = TypeMap.to_cratedb(column.type, column.params)
-        return f"{field} {type_}"
+        return f'"{field}" {type_}'
 
 
 @define
@@ -190,8 +189,8 @@ class AlterTableRecreateStatements:
             f"""
         INSERT INTO
             {table_temp}
-            ({", ".join([f'"{FieldMap.to_cratedb(col.name)}"' for col in self.columns_new])})
-            (SELECT {", ".join([f'"{FieldMap.to_cratedb(col.name)}"' for col in self.columns_old])} FROM {table_real})
+            ({", ".join([f'"{col.name}"' for col in self.columns_new])})
+            (SELECT {", ".join([f'"{col.name}"' for col in self.columns_old])} FROM {table_real})
         """  # noqa: S608, E501
         )
 

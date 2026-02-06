@@ -15,7 +15,6 @@ from cratedb_fivetran_destination.engine import (
 )
 from cratedb_fivetran_destination.model import (
     CrateDBKnowledge,
-    FieldMap,
     FivetranKnowledge,
     FivetranTable,
     TableAddress,
@@ -291,7 +290,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         sa_column: sa.Column
         for sa_column in sa_table.columns:
             ft_column = common_pb2.Column(
-                name=FieldMap.to_fivetran(sa_column.name),
+                name=sa_column.name,
                 type=TypeMap.to_fivetran(sa_column.type),
                 primary_key=sa_column.primary_key,
             )
@@ -359,8 +358,6 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             value = request.keys[filename]
             logger.info(f"Decrypting file: {filename}")
             for record in read_csv.decrypt_file(filename, value):
-                # Rename keys according to field map.
-                record = FieldMap.rename_keys(record)
                 # Replace magic Fivetran values.
                 FivetranKnowledge.replace_values(record)
                 # Adjust values to data types for CrateDB.
@@ -427,7 +424,7 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
         table = sa.Table(table_name, self.metadata, schema=schema_name)
         fivetran_column: common_pb2.Column
         for fivetran_column in fivetran_columns:
-            name = FieldMap.to_cratedb(fivetran_column.name)
+            name = fivetran_column.name
             type_ = TypeMap.to_cratedb(fivetran_column.type, fivetran_column.params)
             db_column = sa.Column(
                 name,

@@ -6,16 +6,16 @@ from copy import deepcopy
 
 import sqlalchemy as sa
 
-from cratedb_fivetran_destination.model import FieldMap, SqlBag, SqlStatement, TypeMap
+from cratedb_fivetran_destination.model import SqlBag, SqlStatement, TypeMap
 from cratedb_fivetran_destination.util import LOG_INFO, LOG_WARNING, log_message
 from fivetran_sdk import common_pb2, destination_sdk_pb2
 
 # Constants for system columns
-FIVETRAN_START = "__fivetran_start"
-FIVETRAN_END = "__fivetran_end"
-FIVETRAN_ACTIVE = "__fivetran_active"
-FIVETRAN_DELETED = "__fivetran_deleted"
-FIVETRAN_SYNCED = "__fivetran_synced"
+FIVETRAN_START = "_fivetran_start"
+FIVETRAN_END = "_fivetran_end"
+FIVETRAN_ACTIVE = "_fivetran_active"
+FIVETRAN_DELETED = "_fivetran_deleted"
+FIVETRAN_SYNCED = "_fivetran_synced"
 
 MIN_TIMESTAMP = "0000-01-01 00:00:00"
 MAX_TIMESTAMP = "9999-12-31 23:59:59"
@@ -209,7 +209,7 @@ class SchemaMigrationHelper:
             https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#copy_table_to_history_mode
             """
             copy_table = copy_op.copy_table_to_history_mode
-            soft_deleted_column = FieldMap.to_cratedb(copy_table.soft_deleted_column)
+            soft_deleted_column = copy_table.soft_deleted_column
 
             with self.engine.connect() as conn:
                 # 1. Create a new table with the new name and add the history mode columns.
@@ -322,13 +322,9 @@ class SchemaMigrationHelper:
             # Compute lists of columns.
             table_obj_tmp = deepcopy(table_obj)
             TableMetadataHelper.remove_column_from_table(table_obj_tmp, column_name)
-            TableMetadataHelper.remove_column_from_table(
-                table_obj_tmp, FieldMap.to_fivetran(FIVETRAN_START)
-            )
-            unchanged_columns = [
-                f'"{FieldMap.to_cratedb(col.name)}"' for col in table_obj_tmp.columns
-            ]
-            all_columns = [*unchanged_columns, column_name, FIVETRAN_START]
+            TableMetadataHelper.remove_column_from_table(table_obj_tmp, FIVETRAN_START)
+            unchanged_columns = [f'"{col.name}"' for col in table_obj_tmp.columns]
+            all_columns = [*unchanged_columns, f'"{column_name}"', FIVETRAN_START]
 
             # 2. Insert new rows to record the history of the DDL operation.
             sql_bag.add(
@@ -454,11 +450,7 @@ class SchemaMigrationHelper:
     def handle_table_sync_mode_migration(self, op, schema, table):
         """Handles table sync mode migration operations."""
 
-        soft_deleted_column = (
-            FieldMap.to_cratedb(op.soft_deleted_column)
-            if op.HasField("soft_deleted_column")
-            else None
-        )
+        soft_deleted_column = op.soft_deleted_column if op.HasField("soft_deleted_column") else None
 
         # Determine the migration type and handle accordingly
         if op.type == destination_sdk_pb2.TableSyncModeMigrationType.SOFT_DELETE_TO_LIVE:
@@ -994,10 +986,8 @@ class TableMetadataHelper:
         table_obj_tmp = deepcopy(table_obj)
         if modulo_column_name is not None:
             TableMetadataHelper.remove_column_from_table(table_obj_tmp, modulo_column_name)
-        TableMetadataHelper.remove_column_from_table(
-            table_obj_tmp, FieldMap.to_fivetran(FIVETRAN_START)
-        )
-        unchanged_columns = [f'"{FieldMap.to_cratedb(col.name)}"' for col in table_obj_tmp.columns]
+        TableMetadataHelper.remove_column_from_table(table_obj_tmp, FIVETRAN_START)
+        unchanged_columns = [f'"{col.name}"' for col in table_obj_tmp.columns]
         if modulo_column_name is not None:
             all_columns = [*unchanged_columns, f'"{modulo_column_name}"', FIVETRAN_START]
         else:
