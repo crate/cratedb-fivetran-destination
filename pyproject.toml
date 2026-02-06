@@ -73,7 +73,7 @@ dependencies = [
   "attrs<26",
   "click<9",
   "google<3.1",
-  "grpcio<1.77",
+  "grpcio<1.79",
   "grpcio-tools<1.77",
   "protobuf<6.34",
   "pycryptodome<3.24",
