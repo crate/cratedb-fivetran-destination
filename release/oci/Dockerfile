@@ -1,5 +1,5 @@
 # Stage 1: Build wheel package
-FROM python:3.14-slim-bookworm AS build
+FROM python:3.14-slim-trixie AS build
 
 ARG BUILD=/usr/src
 
@@ -37,7 +37,7 @@ COPY . ${BUILD}
 RUN python -m build --wheel ${BUILD}
 
 
-FROM python:3.14-slim-bookworm AS package
+FROM python:3.14-slim-trixie AS package
 
 ARG BUILD=/usr/src
 
