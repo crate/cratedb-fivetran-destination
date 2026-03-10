@@ -4,6 +4,7 @@
 
 - Added refinements from recent commits to Fivetran Partner SDK
   up until commit ee4e282d.
+- Added documentation from Fivetran blueprints
 
 ## v0.0.4 - 2026-01-23
 
