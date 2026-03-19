@@ -70,7 +70,7 @@ classifiers = [
 ]
 
 dependencies = [
-  "attrs<26",
+  "attrs<27",
   "click<9",
   "google<3.1",
   "grpcio<1.79",
