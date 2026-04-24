@@ -15,10 +15,16 @@ Follow the setup guide to connect your CrateDB data warehouse to Fivetran.
 
 To connect CrateDB as a [Destination] to Fivetran, you need the following:
 
-- Authentication credentials (hostname, username, password) for a CrateDB
+- A database connection URL. Because the adapter uses SQLAlchemy, a database
+  connection URL like `crate://cratedb.example.net:4200` is the right choice.
+  When connecting to CrateDB Cloud using SSL, please add the `?ssl=true`
+  query parameter.
+
+- Authentication credentials username, password for your CrateDB
   or CrateDB Cloud database cluster.
 
-- A Fivetran role with the [Create Destinations or Manage Destinations] permissions
+- A Fivetran role with the [Create Destinations or Manage Destinations]
+  permissions.
 
 -----
 
