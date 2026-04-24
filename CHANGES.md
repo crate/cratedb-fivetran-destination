@@ -11,7 +11,7 @@
 - Testing: Skipped live mode integration test, the feature has
   been put [on hold][live mode pause] by Fivetran.
 - Added documentation from Fivetran blueprints
-- Dependencies: Updated to grpcio==1.78.*
+- Dependencies: Updated to grpcio==1.80.*
 
 [live mode pause]: https://github.com/crate/cratedb-fivetran-destination/issues/148
 
