@@ -72,7 +72,7 @@ dependencies = [
   "click<9",
   "google<3.1",
   "grpcio==1.80.*",
-  "protobuf<6.34",
+  "protobuf<7.35",
   "pycryptodome<3.24",
   "python-dateutil<2.10",
   "sqlalchemy-cratedb==0.42.0.dev2",
