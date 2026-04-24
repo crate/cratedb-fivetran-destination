@@ -67,7 +67,6 @@ classifiers = [
   "Topic :: Text Processing :: Linguistic",
   "Topic :: Utilities",
 ]
-
 dependencies = [
   "attrs<26",
   "click<9",
@@ -81,7 +80,6 @@ dependencies = [
   "toolz<2",
   "zstandard<0.26",
 ]
-
 optional-dependencies.develop = [
   "mypy<1.20",
   "poethepoet<1",
@@ -103,9 +101,7 @@ optional-dependencies.test = [
   "verlib2<0.4",
 ]
 urls."Release Notes" = "https://github.com/crate/cratedb-fivetran-destination/releases"
-
 urls.Repository = "https://github.com/crate/cratedb-fivetran-destination"
-
 scripts.cratedb-fivetran-destination = "cratedb_fivetran_destination.cli:main"
 scripts.fivetran-sdk-tester = "cratedb_fivetran_destination.testing:cli"
 
@@ -114,7 +110,6 @@ line-length = 100
 extend-exclude = [
   "src/fivetran_sdk",
 ]
-
 lint.select = [
   # Builtins
   "A",
@@ -142,38 +137,12 @@ lint.select = [
   # flake8-2020
   "YTT",
 ]
-lint.per-file-ignores."tests/*" = [ "S101" ] # Use of `assert` detected
-
-[tool.pytest.ini_options]
-minversion = "2.0"
-addopts = """
-  -rfEX -p pytester --strict-markers --verbosity=3
-  --capture=no
-  """
-log_level = "DEBUG"
-log_cli_level = "DEBUG"
-testpaths = [ "tests" ]
-xfail_strict = true
-markers = [
-  "sdktester",
-]
-
-[tool.coverage.run]
-omit = [
-  "src/cratedb_fivetran_destination/dictx.py",
-  "tests/*",
-]
-source = [ "cratedb_fivetran_destination" ]
-
-[tool.coverage.report]
-fail_under = 0
-show_missing = true
+lint.per-file-ignores."tests/*" = [ "S101" ]  # Use of `assert` detected
 
 [tool.mypy]
 packages = [ "cratedb_fivetran_destination" ]
 check_untyped_defs = true
-exclude = [
-]
+exclude = []
 explicit_package_bases = true
 ignore_missing_imports = true
 implicit_optional = true
@@ -182,36 +151,58 @@ non_interactive = true
 no_strict_optional = true
 pretty = true
 
+[tool.pytest]
+ini_options.minversion = "2.0"
+ini_options.addopts = """
+  -rfEX -p pytester --strict-markers --verbosity=3
+  --capture=no
+  """
+ini_options.log_level = "DEBUG"
+ini_options.log_cli_level = "DEBUG"
+ini_options.testpaths = [ "tests" ]
+ini_options.xfail_strict = true
+ini_options.markers = [
+  "sdktester",
+]
+
+[tool.coverage]
+run.omit = [
+  "src/cratedb_fivetran_destination/dictx.py",
+  "tests/*",
+]
+run.source = [ "cratedb_fivetran_destination" ]
+report.fail_under = 0
+report.show_missing = true
+
+[tool.poe]
 # ===================
 # Tasks configuration
 # ===================
-
-[tool.poe.tasks]
-build-app = { cmd = "pyinstaller --name cratedb-fivetran-destination --onefile --strip src/cratedb_fivetran_destination/__main__.py" }
-build-pkg = { cmd = "python -m build" }
-build-requirements = { cmd = "uv export --upgrade --format=requirements.txt --no-annotate --no-editable --no-emit-project --no-emit-workspace --no-hashes", capture_stdout = "requirements.txt" }
-check = [ "lint", "test" ]
-format = [
+tasks.build-app = { cmd = "pyinstaller --name cratedb-fivetran-destination --onefile --strip src/cratedb_fivetran_destination/__main__.py" }
+tasks.build-pkg = { cmd = "python -m build" }
+tasks.build-requirements = { cmd = "uv export --upgrade --format=requirements.txt --no-annotate --no-editable --no-emit-project --no-emit-workspace --no-hashes", capture_stdout = "requirements.txt" }
+tasks.check = [ "lint", "test" ]
+tasks.format = [
   { cmd = "ruff format ." },
   # Configure Ruff not to auto-fix (remove!):
   # Ignore unused imports (F401), unused variables (F841), `print` statements (T201), and commented-out code (ERA001).
   { cmd = "ruff check --fix --ignore=ERA --ignore=F401 --ignore=F841 --ignore=T20 --ignore=ERA001 ." },
   { cmd = "pyproject-fmt --keep-full-version pyproject.toml" },
 ]
-lint = [
+tasks.lint = [
   { cmd = "ruff format --check ." },
   { cmd = "ruff check ." },
   { cmd = "validate-pyproject pyproject.toml" },
   { cmd = "mypy" },
 ]
-test = [
+tasks.test = [
   { cmd = "coverage erase" },
   { cmd = "coverage run --append --context=regular   --module pytest -m 'not sdktester'" },
   { cmd = "coverage run --append --context=sdktester --module pytest -m 'sdktester'" },
   { cmd = "coverage report" },
   { cmd = "coverage xml" },
 ]
-release-pkg = [
+tasks.release-pkg = [
   "build-pkg",
   { cmd = "twine upload --skip-existing dist/*.tar.gz dist/*.whl" },
 ]
