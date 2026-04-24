@@ -48,7 +48,7 @@ to improve quality and fix bugs.
 
 ## Usage
 
-For installation per [PyPI package][PyPI], [OCI image], [standalone executable],
+For installation per [PyPI package][PyPI], [OCI image],
 and usage information, please visit the [handbook] document.
 
 In order to set up a development environment on your workstation, please
@@ -84,7 +84,6 @@ The project uses the Apache License, like CrateDB.
 [handbook]: https://github.com/crate/cratedb-fivetran-destination/blob/main/docs/handbook.md
 [issue tracker]: https://github.com/crate/cratedb-fivetran-destination/issues
 [OCI image]: https://github.com/crate/cratedb-fivetran-destination/pkgs/container/cratedb-fivetran-destination
-[standalone executable]: https://github.com/crate/cratedb-fivetran-destination/releases
 
 [Changelog]: https://github.com/crate/cratedb-fivetran-destination/blob/main/CHANGES.md
 [Community Forum]: https://community.cratedb.com/

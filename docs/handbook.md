@@ -27,11 +27,6 @@ Start gRPC destination server. Note the parameters are optional.
 cratedb-fivetran-destination --port=50052 --max-workers=1
 ```
 
-## Standalone executables
-
-CI on this project created standalone executables for different architectures
-using [PyInstaller], and publishes them on its [releases] page.
-
 ## Container use
 
 Start CrateDB.
