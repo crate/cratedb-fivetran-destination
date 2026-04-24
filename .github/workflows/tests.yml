@@ -30,8 +30,9 @@ jobs:
           - '6.3.1'
           #- 'nightly'  # Currently defunct. https://github.com/crate/crate/issues/19291
         sdk-tester-version:
-          - '2.26.0113.001'  # LIVE mode active
-          - '2.26.0127.001'  # LIVE mode paused
+          - '2.26.0113.001'  # (Jan 16, 2026) LIVE mode active
+          - '2.26.0127.001'  # (Jan 28, 2026) LIVE mode paused
+          - '2.26.0420.001'  # (Apr 21, 2026)
 
     env:
       CRATEDB_VERSION: '${{ matrix.cratedb-version }}'
