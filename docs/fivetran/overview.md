@@ -77,7 +77,7 @@ We use the following data type conversions:
   key constraints while they go.
 
   This will effectively impact the schema migration operations [HISTORY_TO_SOFT_DELETE],
-  [SOFT_DELETE_TO_HISTORY], [HISTORY_TO_LIVE], and [LIVE_TO_HISTORY].
+  [SOFT_DELETE_TO_HISTORY].
 
 - Certain column names are reserved for system purposes, so they will be rejected for users.
   Example: `InvalidColumnNameException["_id" conflicts with system column]`.
@@ -91,5 +91,3 @@ We use the following data type conversions:
 
 [HISTORY_TO_SOFT_DELETE]: https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#history_to_soft_delete
 [SOFT_DELETE_TO_HISTORY]: https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#soft_delete_to_history
-[HISTORY_TO_LIVE]: https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#history_to_live
-[LIVE_TO_HISTORY]: https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#live_to_history
