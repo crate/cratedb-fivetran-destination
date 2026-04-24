@@ -76,7 +76,7 @@ jobs:
 
     - name: Compute artifact suffix (OS-ARCH)
       id: artifact-suffix
-      uses: ASzc/change-string-case-action@v6
+      uses: ASzc/change-string-case-action@v8
       with:
         # linux-x64,macos-arm64,macos-x64,windows-x64
         string: "${{ runner.os }}-${{ runner.arch }}"
