@@ -7,7 +7,7 @@
 - Testing: Updated to `sdk-tester:2.26.0127.001` (Jan 28, 2026)
 - Testing: Skipped live mode integration test, the feature has
   been put [on hold][live mode pause] by Fivetran.
-- Dependencies: Updated to grpcio >= 1.78
+- Dependencies: Updated to grpcio==1.78.*
 
 [live mode pause]: https://github.com/crate/cratedb-fivetran-destination/issues/148
 
