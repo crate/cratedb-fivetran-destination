@@ -30,16 +30,16 @@ ERPs, and files to data warehouses, data lakes, and more.
 massive amounts of data in near real-time, even with complex queries. 
 CrateDB is based on Lucene and Elasticsearch, but [compatible with PostgreSQL].
 
+Note: **Operating the package needs CrateDB 6.2 or higher.**
+
 ## What's inside
 
-This project and repository provides:
+The source code of the `cratedb-fivetran-destination` package, which implements
+the [CrateDB destination adapter for Fivetran]. It works with both [CrateDB] and
+[CrateDB Cloud].
 
-- The source code of the `cratedb-fivetran-destination` package, which implements
-  the [CrateDB destination adapter for Fivetran]. It works with both [CrateDB] and
-  [CrateDB Cloud]. Operating the package successfully needs CrateDB 6.2 or higher.
-
-- The public [issue tracker] for this project. Please use it
-  to report problems, and stay informed about their resolutions.
+The public [issue tracker] for this package. Please use it
+to report problems, and stay informed about their resolutions.
 
 ## Status
 
@@ -51,23 +51,27 @@ to improve quality and fix bugs.
 For installation per [PyPI package][PyPI], [OCI image], [standalone executable],
 and usage information, please visit the [handbook] document.
 
-For building the application, or hacking on it, please refer to the
-[development sandbox] documentation.
+In order to set up a development environment on your workstation, please
+refer to the [development sandbox] documentation. When you see the software
+tests succeed, you should be ready to start hacking.
 
 ## Project Information
 
 ### Acknowledgements
+
 Kudos to the authors of all the many software components this library is
 inheriting from and building upon.
 
 ### Contributing
+
 The CrateDB connector for Fivetran is an open-source project, and is
 [managed on GitHub].
 Feel free to use the adapter as provided or else modify / extend it
 as appropriate for your own applications. We appreciate contributions of any kind.
 
 ### License
-The project uses the Apache license, like CrateDB itself.
+
+The project uses the Apache License, like CrateDB.
 
 
 [compatible with PostgreSQL]: https://cratedb.com/docs/guide/feature/postgresql-compatibility/

@@ -13,6 +13,8 @@ The project provides installation artefacts per [PyPI package][PyPI] and
 [OCI image], you can invoke the adapter by installing it persistently
 first, or by running it ephemerally using its container image.
 
+Note: **Operating the package needs CrateDB 6.2 or higher.**
+
 ## Persistent installation
 
 Install package. [^uv]
