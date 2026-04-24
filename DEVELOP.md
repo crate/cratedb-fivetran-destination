@@ -9,7 +9,7 @@ with the [Fivetran SDK Development Guide].
 ```shell
 git clone https://github.com/crate/cratedb-fivetran-destination.git
 cd cratedb-fivetran-destination
-uv venv --python 3.13 --seed .venv
+uv venv --python 3.14 --seed .venv
 source .venv/bin/activate
 uv pip install --upgrade --editable='.[develop,test]'
 ```
@@ -27,7 +27,7 @@ poe format
 :::{note}
 Use `gcloud auth login` to authenticate the Google SDK so you can pull the OCI images.
 ```shell
-$ docker pull us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:2.25.0131.001
+$ docker pull us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:2.26.0127.001
 error getting credentials - err: exit status 1, out: `You do not currently have an active account selected. See https://cloud.google.com/sdk/docs/authorizing for more information.`
 ```
 :::

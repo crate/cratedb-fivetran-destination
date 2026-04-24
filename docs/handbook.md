@@ -34,8 +34,14 @@ using [PyInstaller], and publishes them on its [releases] page.
 
 ## Container use
 
-Invoke the OCI image [ghcr.io/crate/cratedb-fivetran-destination] at your
-disposal, for example using Docker.
+Start CrateDB.
+```shell
+docker run --rm \
+  --publish=4200:4200 --publish=5432:5432 --env=CRATE_HEAP_SIZE=2g \
+  docker.io/crate:latest '-Cdiscovery.type=single-node'
+```
+
+Start Fivetran gRPC destination server.
 ```bash
 docker run --rm \
   --publish=50052:50052 \
@@ -43,10 +49,12 @@ docker run --rm \
 ```
 
 CI is building image variants for each pr, each night, and for
-GA releases, covering in many situations of the development cycle.
+GA releases, covering many situations of the development cycle.
 
 Please use container image tags appropriately when aiming for version pinning.
 The first GA release will be `cratedb-fivetran-destination:0.0.1`.
+
+OCI image: [ghcr.io/crate/cratedb-fivetran-destination]
 
 ## Caveats
 
