@@ -2,15 +2,16 @@
 
 ## Unreleased
 
-- Model: Added refinements from recent commits to Fivetran
-  Partner SDK up until commit 3037ce4 (Apr 21, 2026).
-- Testing: Updated to `sdk-tester:2.26.0127.001` (Jan 28, 2026)
-- Testing: Updated to `sdk-tester:2.26.0420.001` (Apr 21, 2026)
-- Testing: Skipped live mode integration test, the feature has
-  been put [on hold][live mode pause] by Fivetran.
-- Dependencies: Updated to grpcio==1.78.*
 - Model: Removed workaround for `_`-prefixed column names.
   The package now requires CrateDB 6.2 or higher.
+- Testing: Updated to `sdk-tester:2.26.0127.001` (Jan 28, 2026)
+- Testing: Updated to `sdk-tester:2.26.0420.001` (Apr 21, 2026)
+- Model: Added refinements from recent commits to Fivetran
+  Partner SDK up until commit 3037ce4 (Apr 21, 2026).
+- Testing: Skipped live mode integration test, the feature has
+  been put [on hold][live mode pause] by Fivetran.
+- Added documentation from Fivetran blueprints
+- Dependencies: Updated to grpcio==1.78.*
 
 [live mode pause]: https://github.com/crate/cratedb-fivetran-destination/issues/148
 

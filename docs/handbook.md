@@ -13,6 +13,8 @@ The project provides installation artefacts per [PyPI package][PyPI] and
 [OCI image], you can invoke the adapter by installing it persistently
 first, or by running it ephemerally using its container image.
 
+Note: **Operating the package needs CrateDB 6.2 or higher.**
+
 ## Persistent installation
 
 Install package. [^uv]
@@ -25,26 +27,28 @@ Start gRPC destination server. Note the parameters are optional.
 cratedb-fivetran-destination --port=50052 --max-workers=1
 ```
 
-## Standalone executables
-
-CI on this project created standalone executables for different architectures
-using [PyInstaller], and publishes them on its [releases] page.
-
 ## Container use
 
-Invoke the OCI image [ghcr.io/crate/cratedb-fivetran-destination] at your
-disposal, for example using Docker.
+Start CrateDB.
+```shell
+docker run --rm \
+  --publish=4200:4200 --publish=5432:5432 --env=CRATE_HEAP_SIZE=2g \
+  docker.io/crate:6.2.4 '-Cdiscovery.type=single-node'
+```
+
+Start Fivetran gRPC destination server.
 ```bash
 docker run --rm \
   --publish=50052:50052 \
-  ghcr.io/crate/cratedb-fivetran-destination:nightly
+  ghcr.io/crate/cratedb-fivetran-destination:latest
 ```
 
 CI is building image variants for each pr, each night, and for
-GA releases, covering in many situations of the development cycle.
+GA releases, covering many situations of the development cycle.
+Please use container image tags appropriately when aiming for
+version pinning.
 
-Please use container image tags appropriately when aiming for version pinning.
-The first GA release will be `cratedb-fivetran-destination:0.0.1`.
+OCI image: [ghcr.io/crate/cratedb-fivetran-destination]
 
 ## Caveats
 
