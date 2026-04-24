@@ -7,6 +7,11 @@ hidden: false
 
 # Release Notes
 
+## April 2026
+
+- Model: Removed workaround for `_`-prefixed column names.
+  **The package now requires CrateDB 6.2 or higher.**
+
 ## January 2026
 
 Feature release.
