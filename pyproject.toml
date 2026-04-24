@@ -1,7 +1,7 @@
 [build-system]
 build-backend = "setuptools.build_meta"
 requires = [
-  "grpcio-tools>=1.78,<1.79",
+  "grpcio-tools==1.78.*",
   "setuptools>=42",
 ]
 
@@ -71,8 +71,7 @@ dependencies = [
   "attrs<27",
   "click<9",
   "google<3.1",
-  "grpcio>=1.78,<1.79",
-  "grpcio-tools<1.79",
+  "grpcio==1.78.*",
   "protobuf<6.34",
   "pycryptodome<3.24",
   "python-dateutil<2.10",
