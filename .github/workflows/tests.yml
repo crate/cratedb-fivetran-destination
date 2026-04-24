@@ -14,26 +14,34 @@ concurrency:
 
 jobs:
   test:
-    name: "Python: ${{ matrix.python-version }}
-     on ${{ matrix.os }}"
+    name: "
+    CrateDB: ${{ matrix.cratedb-version }}
+    SDK: ${{ matrix.sdk-tester-version }}
+    "
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: ['ubuntu-latest']
         python-version: [
-          '3.9',
           '3.14',
         ]
-        cratedb-version: ['nightly']
+        cratedb-version:
+          - '6.3.1'
+          #- 'nightly'  # Currently defunct. https://github.com/crate/crate/issues/19291
+        sdk-tester-version:
+          - '2.26.0113.001'  # LIVE mode active
+          - '2.26.0127.001'  # LIVE mode paused
 
     env:
+      CRATEDB_VERSION: '${{ matrix.cratedb-version }}'
+      SDK_TESTER_VERSION: '${{ matrix.sdk-tester-version }}'
       UV_PYTHON_DOWNLOADS: never
       UV_SYSTEM_PYTHON: true
 
     services:
       cratedb:
-        image: docker.io/crate/crate:6.3.1
+        image: docker.io/crate/crate:${{ matrix.cratedb-version }}
         ports:
           - 4200:4200
           - 5432:5432
