@@ -5,6 +5,10 @@
 - Added refinements from recent commits to Fivetran Partner SDK
   up until commit ee4e282d.
 - Testing: Updated to `sdk-tester:2.26.0127.001` (Jan 28, 2026)
+- Testing: Skipped live mode integration test, the feature has
+  been put [on hold][live mode pause] by Fivetran.
+
+[live mode pause]: https://github.com/crate/cratedb-fivetran-destination/issues/148
 
 ## v0.0.4 - 2026-01-23
 

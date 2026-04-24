@@ -13,8 +13,9 @@ logger = logging.getLogger()
 # Check for recent releases:
 # https://console.cloud.google.com/artifacts/docker/build-286712/us/public-docker-us/sdktesters-v2%2Fsdk-tester?pli=1
 
+SDK_TESTER_VERSION = "2.26.0127.001"
 SDK_TESTER_OCI = (
-    "us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:2.26.0127.001"
+    f"us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:{SDK_TESTER_VERSION}"
 )
 
 

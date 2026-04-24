@@ -8,11 +8,22 @@ import sqlalchemy as sa
 from sqlalchemy.sql.type_api import UserDefinedType
 from sqlalchemy.testing.util import drop_all_tables
 from sqlalchemy_cratedb import ObjectType
+from verlib2 import Version
 
-from cratedb_fivetran_destination.testing import SDK_TESTER_OCI, get_sdk_tester_command
+from cratedb_fivetran_destination.testing import (
+    SDK_TESTER_OCI,
+    SDK_TESTER_VERSION,
+    get_sdk_tester_command,
+)
 from tests.conftest import unblock_all_tables
 
 pytestmark = pytest.mark.sdktester
+
+# LIVE mode was paused by Fivetran.
+# Failed to process file: schema_migrations_input_sync_modes.json
+# History to Live mode migration is not supported.
+# https://github.com/crate/cratedb-fivetran-destination/issues/148
+SDK_TESTER_VERSION_SCHEMA_MIGRATIONS_CUTOFF = "2.26.0127.001"
 
 
 def run(command, background: bool = False):
@@ -152,6 +163,12 @@ def test_integration_fivetran_migrations_dml(capfd, services):
     assert "Describe Table: transaction_renamed" in err
 
 
+@pytest.mark.skipif(
+    Version(SDK_TESTER_VERSION) >= Version(SDK_TESTER_VERSION_SCHEMA_MIGRATIONS_CUTOFF),
+    reason=f"SDK tester version {SDK_TESTER_VERSION_SCHEMA_MIGRATIONS_CUTOFF} and higher "
+    f"rejects schema migrations: Failed to process file: History to Live mode migration "
+    f"is not supported.",
+)
 @pytest.mark.parametrize("services", ["./tests/data/fivetran_migrations_sync"], indirect=True)
 def test_integration_fivetran_migrations_sync(capfd, services):
     """
