@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.0 - 2026-04-24
+
 - Model: Removed workaround for `_`-prefixed column names.
   The package now requires CrateDB 6.2 or higher.
 - Testing: Updated to `sdk-tester:2.26.0127.001` (Jan 28, 2026)
