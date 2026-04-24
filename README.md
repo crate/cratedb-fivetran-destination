@@ -51,7 +51,7 @@ to improve quality and fix bugs.
 For installation per [PyPI package][PyPI], [OCI image],
 and usage information, please visit the [handbook] document.
 
-In order to set up a development environment on your workstation, please
+To set up a development environment on your workstation, please
 refer to the [development sandbox] documentation. When you see the software
 tests succeed, you should be ready to start hacking.
 

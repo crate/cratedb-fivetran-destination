@@ -33,21 +33,20 @@ Start CrateDB.
 ```shell
 docker run --rm \
   --publish=4200:4200 --publish=5432:5432 --env=CRATE_HEAP_SIZE=2g \
-  docker.io/crate:latest '-Cdiscovery.type=single-node'
+  docker.io/crate:6.2.4 '-Cdiscovery.type=single-node'
 ```
 
 Start Fivetran gRPC destination server.
 ```bash
 docker run --rm \
   --publish=50052:50052 \
-  ghcr.io/crate/cratedb-fivetran-destination:nightly
+  ghcr.io/crate/cratedb-fivetran-destination:latest
 ```
 
 CI is building image variants for each pr, each night, and for
 GA releases, covering many situations of the development cycle.
-
-Please use container image tags appropriately when aiming for version pinning.
-The first GA release will be `cratedb-fivetran-destination:0.0.1`.
+Please use container image tags appropriately when aiming for
+version pinning.
 
 OCI image: [ghcr.io/crate/cratedb-fivetran-destination]
 
