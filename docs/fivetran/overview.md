@@ -76,11 +76,13 @@ We use the following data type conversions:
   history mode operations, the adapter uses table copy operations that drop primary
   key constraints while they go.
 
-  This will effectively impact the schema migration operations [HISTORY_TO_SOFT_DELETE],
-  [SOFT_DELETE_TO_HISTORY].
+  This will effectively impact the schema migration operations [HISTORY_TO_SOFT_DELETE]
+  and [SOFT_DELETE_TO_HISTORY].
 
-- Certain column names are reserved for system purposes, so they will be rejected for users.
-  Example: `InvalidColumnNameException["_id" conflicts with system column]`.
+- Certain column names are reserved for system purposes, so they will be
+  rejected for users. Example: `InvalidColumnNameException["_id" conflicts
+  with system column]`. Let us know on [CRATEDB-FIVETRAN-173] if this is a
+  problem for you so we can provide a workaround.
 
 
 [CrateDB]: https://cratedb.com/database
@@ -89,5 +91,6 @@ We use the following data type conversions:
 [CrateDB OSS]: https://cratedb.com/database/editions/oss
 [CrateDB Support]: https://cratedb.com/support
 
+[CRATEDB-FIVETRAN-173]: https://github.com/crate/cratedb-fivetran-destination/issues/173
 [HISTORY_TO_SOFT_DELETE]: https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#history_to_soft_delete
 [SOFT_DELETE_TO_HISTORY]: https://github.com/fivetran/fivetran_partner_sdk/blob/main/schema-migration-helper-service.md#soft_delete_to_history
