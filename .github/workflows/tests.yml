@@ -33,7 +33,7 @@ jobs:
 
     services:
       cratedb:
-        image: docker.io/crate/crate:nightly
+        image: docker.io/crate/crate:6.3.1
         ports:
           - 4200:4200
           - 5432:5432
