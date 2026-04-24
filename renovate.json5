@@ -1,4 +1,14 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "rangeStrategy": "widen",
+
+  // config:recommended, but `:disableRateLimiting`.
+  // https://docs.renovatebot.com/presets-config/#configrecommended
+  "extends": [
+    "config:recommended",
+    ":disableRateLimiting"
+  ],
+  "labels": [
+    "dependencies"
+  ]
 }
