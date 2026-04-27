@@ -24,13 +24,14 @@ Format code.
 poe format
 ```
 
-:::{note}
-Use `gcloud auth login` to authenticate the Google SDK so you can pull the OCI images.
+Note: Use `gcloud auth login` to authenticate the Google SDK so you can pull the OCI images.
 ```shell
 $ docker pull us-docker.pkg.dev/build-286712/public-docker-us/sdktesters-v2/sdk-tester:2.26.0127.001
 error getting credentials - err: exit status 1, out: `You do not currently have an active account selected. See https://cloud.google.com/sdk/docs/authorizing for more information.`
 ```
-:::
+
+Note: Use `export SDK_TESTER_VERSION=2.26.0113.001` to use a specific version
+of the SDK tester.
 
 ## Software tests
 
