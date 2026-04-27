@@ -805,7 +805,7 @@ class SchemaMigrationHelper:
 
             # Validate operation timestamp condition.
             sql = f"""
-            SELECT TO_CHAR(MAX({FIVETRAN_START}), 'YYYY-MM-DDTHH:MI:SSZ') AS max_start
+            SELECT DATE_FORMAT('%Y-%m-%dT%H:%i:%sZ', MAX({FIVETRAN_START})) AS max_start
             FROM "{schema}"."{table}"
             WHERE {FIVETRAN_ACTIVE} = TRUE
             """
