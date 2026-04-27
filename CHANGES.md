@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.1 - 2026-04-27
+
 - Fixed schema migration helper's `_validate_history_table` by using `DATE_FORMAT`
   instead of `TO_CHAR`. Because live mode was paused, this doesn't have an effect
   on usability today.
