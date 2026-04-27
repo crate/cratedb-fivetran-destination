@@ -84,6 +84,7 @@ optional-dependencies.develop = [
   "poethepoet<1",
   "pyproject-fmt<3",
   "ruff<0.16",
+  "types-python-dateutil",
   "validate-pyproject<1",
 ]
 optional-dependencies.release = [
