@@ -72,6 +72,15 @@ class CrateDBDestinationImpl(destination_sdk_pb2_grpc.DestinationConnectorServic
             connection.execute(sa.text("SELECT 42"))
         return common_pb2.TestResponse(success=True)
 
+    def Capabilities(self, request, context):
+        """
+        The Capabilities RPC call should return the destination's capabilities,
+        such as reading batch files in CSV or PARQUET.
+        """
+        return destination_sdk_pb2.CapabilitiesResponse(
+            batch_file_format=destination_sdk_pb2.BatchFileFormat.CSV
+        )
+
     def CreateTable(self, request, context):
         """
         Create database table using SQLAlchemy.
