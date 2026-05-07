@@ -42,6 +42,24 @@ def test_api_test(capsys):
     assert format_log_message("Test database connection: foo", newline=True) in out
 
 
+def test_api_capabilities(capsys):
+    """
+    Invoke gRPC API method `Capabilities`.
+    """
+    from cratedb_fivetran_destination.main import CrateDBDestinationImpl
+
+    destination = CrateDBDestinationImpl()
+
+    # Invoke gRPC API method.
+    response = destination.Capabilities(
+        request=destination_sdk_pb2.CapabilitiesRequest(),
+        context=destination_sdk_pb2.CapabilitiesResponse(),
+    )
+
+    # Validate outcome.
+    assert response.batch_file_format == destination_sdk_pb2.BatchFileFormat.CSV
+
+
 def test_api_configuration_form(capsys):
     """
     Invoke gRPC API method `ConfigurationForm`.

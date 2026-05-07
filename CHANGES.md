@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added `Capabilities` RPC endpoint, returning `BatchFileFormat.CSV`
+
 ## v0.1.1 - 2026-04-27
 
 - Fixed schema migration helper's `_validate_history_table` by using `DATE_FORMAT`
