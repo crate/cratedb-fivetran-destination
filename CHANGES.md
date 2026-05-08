@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.1.2 - 2026-05-08
+
 - Added `Capabilities` RPC endpoint, returning `BatchFileFormat.CSV`
 
 ## v0.1.1 - 2026-04-27
