@@ -80,7 +80,7 @@ dependencies = [
   "zstandard<0.26",
 ]
 optional-dependencies.develop = [
-  "mypy<2.1",
+  "mypy<2.2",
   "poethepoet<1",
   "pyproject-fmt<3",
   "ruff<0.16",
