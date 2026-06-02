@@ -6,7 +6,8 @@
   // https://docs.renovatebot.com/presets-config/#configrecommended
   "extends": [
     "config:recommended",
-    ":disableRateLimiting"
+    ":disableDependencyDashboard",
+    ":disableRateLimiting",
   ],
   "labels": [
     "dependencies"
