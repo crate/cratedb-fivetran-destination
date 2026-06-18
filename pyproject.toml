@@ -70,6 +70,7 @@ classifiers = [
 dependencies = [
   "attrs<27",
   "click<9",
+  "crate<2.2",
   "google<3.1",
   "grpcio==1.81.*",
   "protobuf<7.36",

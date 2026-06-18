@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Harmonized drivers by downgrading to `crate<2.2`
+
 ## v0.1.2 - 2026-05-08
 
 - Added `Capabilities` RPC endpoint, returning `BatchFileFormat.CSV`
