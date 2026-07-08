@@ -98,7 +98,7 @@ optional-dependencies.test = [
   "pretend<2",
   "pytest<10",
   "pytest-mock<4",
-  "verlib2<0.4",
+  "verlib2<26.3",
 ]
 urls."Release Notes" = "https://github.com/crate/cratedb-fivetran-destination/releases"
 urls.Repository = "https://github.com/crate/cratedb-fivetran-destination"
