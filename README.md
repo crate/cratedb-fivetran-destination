@@ -1,3 +1,8 @@
+> [!IMPORTANT] 
+> **This repository is deprecated and archived.** 
+> Please consider using the [PostgresSQL destination](https://fivetran.com/docs/destinations/postgresql) 
+> as an alternative on how to connect [Fivetran] with [CrateDB].
+
 # CrateDB Fivetran Destination
 
 [![License][badge-license]][project-license]
